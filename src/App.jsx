@@ -1,13 +1,14 @@
+/* eslint-disable no-unused-vars */
 import { useState } from "react";
 import "./App.css";
-import Login from "./page/Login/Login";
 import Chat from "./page/Chat/Chat";
-import Singup from "./page/Singup/Singup";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import Login from "./page/AuthPages/Login";
+import Signin from "./page/AuthPages/Signin";
+import ForgotPassword from "./page/AuthPages/ForgotPassword";
 
 function App() {
   const [isAuth, setIsAuth] = useState(false);
-
   return (
     <div className="app">
       <Routes>
@@ -20,7 +21,8 @@ function App() {
         ) : (
           <>
             <Route path="/login" element={<Login />} />
-            <Route path="/singup" element={<Singup />} />
+            <Route path="/signin" element={<Signin />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
             <Route path="*" element={<Navigate to="/login" />} />
           </>

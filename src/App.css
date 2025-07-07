@@ -4,6 +4,17 @@
   box-sizing: border-box;
 }
 
+body {
+  margin: 0px;
+  padding: 0px;
+  background-color: #f2f5fa;
+  color: rgba(0, 0, 0);
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
 .app {
   width: 100vw;
   height: 100vh;
@@ -13,18 +24,16 @@
 
 .input-box {
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
   position: relative;
-  margin-bottom: 15px;
+  margin-bottom: 8px;
+  padding-bottom: 15px;
 }
 .input-box label {
   font-size: 14px;
   font-weight: 600;
   color: #307cff;
   position: absolute;
-  top: 6px;
+  top: 9px;
   left: 10px;
 }
 
@@ -32,7 +41,7 @@
   width: 100%;
   font-size: 14px;
   padding: 10px 15px;
-  padding-left: 50px;
+  padding-left: 40px;
   border-radius: 10px;
   border: 1px solid #307cff5b;
   background-color: #fafbfc;
@@ -45,4 +54,7 @@
 .input-box .error {
   font-size: 12px;
   letter-spacing: 1px;
+  position: absolute;
+  bottom: 0px;
+  left: 5px;
 }
