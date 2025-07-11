@@ -3,9 +3,16 @@ import * as Yup from "yup";
 import "./index.css";
 import { Mail, ShieldCheck, User, MessageSquareHeart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import api from "../../services/api";
+import { useDispatch } from "react-redux";
+import { handelCatch, showSuccess, throwError } from "../../store/globalSlice";
 
 const signinSchema = Yup.object().shape({
-  name: Yup.string()
+  fist_name: Yup.string()
+    .min(2, "Too Short!")
+    .max(50, "Too Long!")
+    .required("Name is required"),
+  last_name: Yup.string()
     .min(2, "Too Short!")
     .max(50, "Too Long!")
     .required("Name is required"),
@@ -16,6 +23,22 @@ const signinSchema = Yup.object().shape({
 });
 function Signin() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleSignin = async (val) => {
+    try {
+      const req = val;
+      const res = await api.post("/user/sign-up", req);
+      if (res.status === 200) {
+        dispatch(showSuccess(res.data.message));
+        navigate("/login");
+      } else {
+        dispatch(throwError(res.data.message));
+      }
+    } catch (error) {
+      dispatch(handelCatch(error));
+    }
+  };
   return (
     <div className="login-signin-component">
       <div className="login-signin-card">
@@ -25,24 +48,43 @@ function Signin() {
         </div>
         <div className="form">
           <Formik
-            initialValues={{ name: "", email: "", password: "" }}
-            validationSchema={signinSchema}
-            onSubmit={(values, { setSubmitting }) => {
-              setTimeout(() => {
-                alert(JSON.stringify(values, null, 2));
-                setSubmitting(false);
-              }, 400);
+            initialValues={{
+              first_name: "",
+              last_name: "",
+              email: "",
+              password: "",
             }}
+            validationSchema={signinSchema}
           >
-            {({ isSubmitting }) => (
+            {({ values }) => (
               <Form className="form">
                 <div className="input-box">
                   <label>
                     <User size={20} />
                   </label>
-                  <Field type="text" name="name" placeholder="Enter Name" />
+                  <Field
+                    type="text"
+                    name="first_name"
+                    placeholder="Enter Name"
+                  />
                   <ErrorMessage
-                    name="name"
+                    name="first_name"
+                    component="div"
+                    className="error"
+                    style={{ color: "red" }}
+                  />
+                </div>
+                <div className="input-box">
+                  <label>
+                    <User size={20} />
+                  </label>
+                  <Field
+                    type="text"
+                    name="last_name"
+                    placeholder="Enter Last Name"
+                  />
+                  <ErrorMessage
+                    name="last_name"
                     component="div"
                     className="error"
                     style={{ color: "red" }}
@@ -78,8 +120,8 @@ function Signin() {
                 </div>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
                   className="login-signin-btn"
+                  onClick={() => handleSignin(values)}
                 >
                   Submit
                 </button>

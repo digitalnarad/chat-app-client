@@ -1,7 +1,10 @@
 import { LogOut, Search, Settings } from "lucide-react";
-import React from "react";
+import { useDispatch } from "react-redux";
+import { logout, setAuthData } from "../../store/globalSlice";
 
 function ChatSidebar() {
+  const dispatch = useDispatch();
+
   const contacts = [
     {
       id: "1",
@@ -155,7 +158,12 @@ function ChatSidebar() {
           <h1 className="chat-logo">Chats</h1>
           <div className="setting-btn-group">
             <div className="setting-btn">
-              <LogOut size={22} />
+              <LogOut
+                size={22}
+                onClick={() => {
+                  dispatch(logout());
+                }}
+              />
             </div>
             <div className="setting-btn">
               <Settings size={22} />

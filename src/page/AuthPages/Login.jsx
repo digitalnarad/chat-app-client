@@ -4,6 +4,14 @@ import * as Yup from "yup";
 
 import "./index.css";
 import { useNavigate } from "react-router-dom";
+import api from "../../services/api";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  handelCatch,
+  setAuthToken,
+  showSuccess,
+  throwError,
+} from "../../store/globalSlice";
 // Create a Yup schema for validation
 const loginSchema = Yup.object().shape({
   email: Yup.string().email("Invalid email").required("Email is required"),
@@ -12,7 +20,29 @@ const loginSchema = Yup.object().shape({
     .required("Password is required"),
 });
 function Login() {
+  const reduxData = useSelector((state) => state.global);
+
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleSubmit = async (value) => {
+    try {
+      const res = await api.post("/user/sign-in", value);
+      console.log("res", res);
+      if (res.status === 200) {
+        const token = res.data.response.token;
+        console.log("token", token);
+        localStorage.setItem("token", token);
+        dispatch(setAuthToken(token));
+        dispatch(showSuccess(res.data.message));
+      } else {
+        dispatch(throwError(res.data.message));
+      }
+    } catch (error) {
+      console.log("error", error);
+      dispatch(handelCatch(error));
+    }
+  };
 
   return (
     <div className="login-signin-component">
@@ -27,10 +57,7 @@ function Login() {
             initialValues={{ email: "", password: "" }}
             validationSchema={loginSchema}
             onSubmit={(values, { setSubmitting }) => {
-              setTimeout(() => {
-                alert(JSON.stringify(values, null, 2));
-                setSubmitting(false);
-              }, 400);
+              handleSubmit(values, setSubmitting);
             }}
           >
             {({ isSubmitting }) => (
@@ -66,16 +93,13 @@ function Login() {
                 <div
                   className="forgot-password"
                   onClick={() => {
-                    navigate(`/forgot-password`); // Navigate to the forgot password page
+                    // navigate(`/forgot-password`); // Navigate to the forgot password page
+                    console.log("reduxData", reduxData);
                   }}
                 >
                   Forgot Password?
                 </div>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="login-signin-btn"
-                >
+                <button type="submit" className="login-signin-btn">
                   Submit
                 </button>
               </Form>
