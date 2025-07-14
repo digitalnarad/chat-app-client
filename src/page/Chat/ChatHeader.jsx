@@ -1,20 +1,34 @@
 import { Search, Settings } from "lucide-react";
-import React from "react";
+import { useSelector } from "react-redux";
+import { parseTimeAndDate } from "../../assets/helper";
 
 function ChatHeader() {
+  const { selectedContact } = useSelector((state) => state.global);
+  console.log("selectedContact", selectedContact);
+
+  const {
+    firstName = "",
+    lastName = "",
+    activeStatus = {},
+  } = selectedContact?.participant || {};
+
   return (
     <div className="chat-header">
       <div className="chat-header-row">
-        {/* Contact Info */}
         <div className="chat-header-info">
-          <div className="chat-header-avatar">SJ</div>
+          <div className="chat-header-avatar">{`${firstName[0]}${lastName[0]}`}</div>
           <div>
-            <h2 className="chat-header-name">Sarah Johnson</h2>
-            <p className="chat-header-status">Online</p>
+            <h2 className="chat-header-name">{`${firstName} ${lastName}`}</h2>
+            <p className="chat-header-status">
+              {activeStatus?.status === "online"
+                ? "Online"
+                : `Offline at ${
+                    activeStatus?.at ? parseTimeAndDate(activeStatus?.at) : ""
+                  }`}
+            </p>
           </div>
         </div>
 
-        {/* Actions */}
         <div className="chat-header-actions">
           <button className="chat-header-action-icon">
             <div className="btn-cover"></div>

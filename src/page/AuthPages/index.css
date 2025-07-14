@@ -108,3 +108,13 @@
   padding: 5px;
   letter-spacing: 0.5px;
 }
+
+.password-eye-icon {
+  position: absolute;
+  right: 10px;
+  top: 40%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #2f7eff;
+  transition: color 0.3s ease;
+}

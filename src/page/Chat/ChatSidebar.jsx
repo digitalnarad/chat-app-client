@@ -1,158 +1,18 @@
 import { LogOut, Search, Settings } from "lucide-react";
-import { useDispatch } from "react-redux";
-import { logout, setAuthData } from "../../store/globalSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { logout, setSelectedContact } from "../../store/globalSlice";
+import { parseTimeAndDate } from "../../assets/helper";
+import AddNewChat from "./AddNewChat";
+import { use, useState } from "react";
 
-function ChatSidebar() {
+function ChatSidebar({ socketRef }) {
   const dispatch = useDispatch();
+  const { contacts, selectedContact } = useSelector((state) => state.global);
+  const [show, setShow] = useState(false);
 
-  const contacts = [
-    {
-      id: "1",
-      name: "Sarah Johnson",
-      lastMessage: "Hey! How's your day going?",
-      time: "10:30 AM",
-      avatar: "SJ",
-      unread: 2,
-    },
-    {
-      id: "2",
-      name: "Mike Chen",
-      lastMessage: "Thanks for the quick response!",
-      time: "9:45 AM",
-      avatar: "MC",
-    },
-    {
-      id: "3",
-      name: "Team Design",
-      lastMessage: "New mockups are ready for review",
-      time: "Yesterday",
-      avatar: "TD",
-      unread: 5,
-    },
-    {
-      id: "4",
-      name: "Alex Rivera",
-      lastMessage: "Let's catch up soon 😊",
-      time: "Yesterday",
-      avatar: "AR",
-    },
-    {
-      id: "5",
-      name: "Emma Watson",
-      lastMessage: "Perfect! See you at 3 PM",
-      time: "Tuesday",
-      avatar: "EW",
-    },
-    {
-      id: "6",
-      name: "David Kim",
-      lastMessage: "The project looks amazing!",
-      time: "Monday",
-      avatar: "DK",
-    },
-    {
-      id: "7",
-      name: "Sarah Johnson",
-      lastMessage: "Hey! How's your day going?",
-      time: "10:30 AM",
-      avatar: "SJ",
-      unread: 2,
-    },
-    {
-      id: "8",
-      name: "Mike Chen",
-      lastMessage: "Thanks for the quick response!",
-      time: "9:45 AM",
-      avatar: "MC",
-    },
-    {
-      id: "3",
-      name: "Team Design",
-      lastMessage: "New mockups are ready for review",
-      time: "Yesterday",
-      avatar: "TD",
-      unread: 5,
-    },
-    {
-      id: "4",
-      name: "Alex Rivera",
-      lastMessage: "Let's catch up soon 😊",
-      time: "Yesterday",
-      avatar: "AR",
-    },
-    {
-      id: "5",
-      name: "Emma Watson",
-      lastMessage: "Perfect! See you at 3 PM",
-      time: "Tuesday",
-      avatar: "EW",
-    },
-    {
-      id: "6",
-      name: "David Kim",
-      lastMessage: "The project looks amazing!",
-      time: "Monday",
-      avatar: "DK",
-    },
-    {
-      id: "5",
-      name: "Emma Watson",
-      lastMessage: "Perfect! See you at 3 PM",
-      time: "Tuesday",
-      avatar: "EW",
-    },
-    {
-      id: "6",
-      name: "David Kim",
-      lastMessage: "The project looks amazing!",
-      time: "Monday",
-      avatar: "DK",
-    },
-    {
-      id: "5",
-      name: "Emma Watson",
-      lastMessage: "Perfect! See you at 3 PM",
-      time: "Tuesday",
-      avatar: "EW",
-    },
-    {
-      id: "6",
-      name: "David Kim",
-      lastMessage: "The project looks amazing!",
-      time: "Monday",
-      avatar: "DK",
-    },
-    {
-      id: "5",
-      name: "Emma Watson",
-      lastMessage: "Perfect! See you at 3 PM",
-      time: "Tuesday",
-      avatar: "EW",
-    },
-    {
-      id: "6",
-      name: "David Kim",
-      lastMessage: "The project looks amazing!",
-      time: "Monday",
-      avatar: "DK",
-    },
-    {
-      id: "5",
-      name: "Emma Watson",
-      lastMessage: "Perfect! See you at 3 PM",
-      time: "Tuesday",
-      avatar: "EW",
-    },
-    {
-      id: "6",
-      name: "David Kim",
-      lastMessage: "The project looks amazing!",
-      time: "Monday",
-      avatar: "DK",
-    },
-  ];
   return (
     <div className="chat-sidebar">
+      {<AddNewChat show={show} onHide={() => setShow(false)} />}
       <div className="chat-sidebar-header">
         <div className="logo-setting">
           <h1 className="chat-logo">Chats</h1>
@@ -170,6 +30,14 @@ function ChatSidebar() {
             </div>
           </div>
         </div>
+        <div className="new-chat-btn-group">
+          <button className="add-new-chat-btn" onClick={() => setShow(true)}>
+            <span className="btn-text">New Chat</span>
+          </button>
+          <button className="add-new-chat-btn" onClick={() => setShow(true)}>
+            <span className="btn-text">Chat Request</span>
+          </button>
+        </div>
         <div className="chat-search-box">
           <label htmlFor="chat_search" className="chat-search-label">
             <Search size={18} strokeWidth={2} />
@@ -183,23 +51,39 @@ function ChatSidebar() {
         </div>
       </div>
       <div className="contact-list chat-scroll">
-        {contacts.map((contact, index) => {
+        {(contacts || []).map((contact, index) => {
+          const { participant } = contact;
+          const selected = selectedContact?._id === contact._id;
           return (
-            <div key={index} className="contact-item">
-              {/* Avatar */}
-              <div className="contact-avatar">{contact.avatar}</div>
+            <div
+              key={index}
+              className={`contact-item ${selected ? "selected" : ""}`}
+              onClick={() => dispatch(setSelectedContact(contact))}
+            >
+              <div className="contact-avatar">
+                {participant?.firstName?.[0] + participant?.lastName?.[0]}
+              </div>
 
-              {/* Contact Info */}
               <div className="contact-info">
                 <div className="contact-header">
-                  <h3 className="contact-name">{contact.name}</h3>
-                  <span className="contact-time">{contact.time}</span>
+                  <div className="contact-name">
+                    {participant?.firstName + " " + participant?.lastName}
+                  </div>
+                  <span className="contact-time">
+                    {parseTimeAndDate(contact?.updatedAt)}
+                  </span>
                 </div>
                 <div className="contact-message-row">
-                  <p className="contact-message">{contact.lastMessage}</p>
-                  {contact.unread && (
-                    <span className="contact-unread">{contact.unread}</span>
-                  )}
+                  <span className="contact-message">
+                    {contact?.lastMessage || "Join this chat...!"}
+                  </span>
+                  <span
+                    className={`contact-unread ${
+                      contact?.unread ? "" : "contact-read"
+                    }`}
+                  >
+                    {1}
+                  </span>
                 </div>
               </div>
             </div>

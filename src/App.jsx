@@ -9,11 +9,11 @@ import ForgotPassword from "./page/AuthPages/ForgotPassword";
 import ChatLayout from "./page/Chat/ChatLayout";
 import PopupAlert from "./components/PopupAlert/PopupAlert";
 import { setAuthToken } from "./store/globalSlice"; // adjust import to your slice
+import "bootstrap/dist/css/bootstrap.min.css";
 
 function App() {
   const dispatch = useDispatch();
   const reduxData = useSelector((state) => state.global);
-  console.log("reduxData", reduxData);
   const token = localStorage.getItem("token");
   const isAuth = !!token;
 

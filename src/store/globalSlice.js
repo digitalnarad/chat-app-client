@@ -8,6 +8,8 @@ const initialState = {
     type: "",
   },
   authToken: "",
+  contacts: [],
+  selectedContact: null,
 };
 
 const globalSlice = createSlice({
@@ -21,8 +23,13 @@ const globalSlice = createSlice({
       state.errorData = action.payload;
     },
     setAuthToken(state, action) {
-      console.log("action.payload", action.payload);
       state.authToken = action.payload;
+    },
+    setContacts(state, action) {
+      state.contacts = action.payload;
+    },
+    setSelectedContact(state, action) {
+      state.selectedContact = action.payload;
     },
   },
 });
@@ -77,6 +84,12 @@ export const logout = () => async (dispatch) => {
   localStorage.removeItem("token");
 };
 
-export const { setAuthData, setErrorData, setAuthToken } = globalSlice.actions;
+export const {
+  setAuthData,
+  setErrorData,
+  setAuthToken,
+  setContacts,
+  setSelectedContact,
+} = globalSlice.actions;
 
 export default globalSlice.reducer;

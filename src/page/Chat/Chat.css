@@ -32,7 +32,7 @@
 /* sidebar */
 .chat-sidebar-header {
   width: 100%;
-  height: 130px;
+  height: 180px;
   background: #fff;
   display: flex;
   flex-direction: column;
@@ -71,6 +71,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  gap: 5px;
 }
 .chat-search-input {
   width: 100%;
@@ -108,16 +109,40 @@
   color: #2f7eff;
 }
 
+.new-chat-btn-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.add-new-chat-btn {
+  background: #2563eb; /* 'bg-primary' */
+  color: #fff;
+  font-weight: 500;
+  border: none;
+  border-radius: 5px;
+  height: 35px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.5px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
 .contact-list {
   width: 100%;
-  height: calc(100% - 130px);
+  height: calc(100% - 180px);
   overflow-y: auto;
 }
 
 .contact-item {
+  background: #fff;
   display: flex;
   align-items: center;
-  padding: 16px;
+  padding: 10px;
   border-bottom: 1px solid #e5e7eb; /* Tailwind's border-border/50 approx */
   cursor: pointer;
   transition: background-color 0.2s;
@@ -125,6 +150,12 @@
 
 .contact-item:hover {
   background-color: rgba(229, 231, 235, 0.5); /* Tailwind's bg-secondary/50 */
+}
+.selected {
+  background-color: rgba(203, 219, 250, 0.5); /* Tailwind's bg-secondary/50 */
+}
+.selected:hover {
+  background-color: rgba(203, 219, 250, 0.5); /* Slightly darker on hover */
 }
 
 .contact-avatar {
@@ -140,11 +171,13 @@
   margin-right: 12px;
   letter-spacing: 1px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07); /* shadow-soft approximation */
+  text-transform: uppercase;
 }
 
 .contact-info {
   flex: 1;
   min-width: 0;
+  gap: 5px;
 }
 
 .contact-header {
@@ -160,6 +193,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 20px;
 }
 
 .contact-time {
@@ -171,7 +205,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 5px;
+  margin: 0px;
 }
 
 .contact-message {
@@ -195,6 +229,11 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  user-select: none;
+}
+.contact-read {
+  background-color: transparent; /* Tailwind's bg-primary */
+  color: transparent; /* Tailwind's text-primary-foreground */
 }
 
 .chat-header {
@@ -229,12 +268,14 @@
   letter-spacing: 1px;
   font-weight: 500;
   margin-right: 12px;
+  text-transform: uppercase;
 }
 
 .chat-header-name {
   font-weight: 600; /* 'font-semibold' */
   color: #111827; /* 'text-foreground' */
   margin: 0;
+  font-size: 26px;
 }
 
 .chat-header-status {

@@ -20,7 +20,7 @@ api.interceptors.response.use(
   (error) => {
     // Example: auto-logout on 401
     if (error.response?.status === 401) {
-      // dispatch(logout()) or navigate("/login"), etc.
+      dispatch(logout());
     }
     return Promise.reject(error);
   }

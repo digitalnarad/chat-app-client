@@ -1,4 +1,11 @@
-import { Mail, MessagesSquare, ShieldCheck, User } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  MessagesSquare,
+  ShieldCheck,
+  User,
+} from "lucide-react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 
@@ -12,6 +19,7 @@ import {
   showSuccess,
   throwError,
 } from "../../store/globalSlice";
+import { useState } from "react";
 // Create a Yup schema for validation
 const loginSchema = Yup.object().shape({
   email: Yup.string().email("Invalid email").required("Email is required"),
@@ -25,13 +33,13 @@ function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  const [passwordVisible, setPasswordVisible] = useState(false);
+
   const handleSubmit = async (value) => {
     try {
       const res = await api.post("/user/sign-in", value);
-      console.log("res", res);
       if (res.status === 200) {
         const token = res.data.response.token;
-        console.log("token", token);
         localStorage.setItem("token", token);
         dispatch(setAuthToken(token));
         dispatch(showSuccess(res.data.message));
@@ -79,10 +87,18 @@ function Login() {
                     <ShieldCheck size={20} />
                   </label>
                   <Field
-                    type="password"
+                    type={passwordVisible ? "text" : "password"}
                     name="password"
-                    placeholder="Enter Email"
+                    placeholder="Enter Password"
                   />
+                  <div
+                    className="password-eye-icon"
+                    onClick={() => {
+                      setPasswordVisible(!passwordVisible);
+                    }}
+                  >
+                    {passwordVisible ? <Eye size={20} /> : <EyeOff size={20} />}
+                  </div>
                   <ErrorMessage
                     name="password"
                     component="div"

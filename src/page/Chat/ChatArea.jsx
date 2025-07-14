@@ -1,139 +1,51 @@
 import { SendHorizontal } from "lucide-react";
-import MessageBubble from "./MessageBubble/MessageBubble";
+import MessageBubble from "./MessageBubble";
+import { useSelector } from "react-redux";
+import { chatMessages } from "./constant";
+import { use, useCallback, useEffect, useState } from "react";
 
-function ChatArea() {
-  const messages = [
-    {
-      id: "1",
-      text: "Hey! How's your day going?",
-      sender: "contact",
-      time: "10:30 AM",
-    },
-    {
-      id: "2",
-      text: "Hi Sarah! It's going great, thanks for asking. Just finished a big project at work 🎉",
-      sender: "user",
-      time: "10:32 AM",
-    },
-    {
-      id: "3",
-      text: "That's awesome! Congratulations! 🎊 What was the project about?",
-      sender: "contact",
-      time: "10:33 AM",
-    },
-    {
-      id: "4",
-      text: "Thanks! It was a chat application - actually pretty similar to this one we're using right now 😄",
-      sender: "user",
-      time: "10:35 AM",
-    },
-    {
-      id: "5",
-      text: "Wow, that's so cool! I'd love to see it sometime. Building chat apps must be really interesting.",
-      sender: "contact",
-      time: "10:36 AM",
-    },
-    {
-      id: "6",
-      text: "Absolutely! There's so much that goes into making them feel smooth and intuitive. The real-time messaging, the UI/UX design, all the little details that make communication feel natural.",
-      sender: "user",
-      time: "10:38 AM",
-    },
-    {
-      id: "7",
-      text: "I can imagine! Speaking of which, this interface looks really clean and modern. Great job on the design! 👏",
-      sender: "contact",
-      time: "10:40 AM",
-    },
-    {
-      id: "1",
-      text: "Hey! How's your day going?",
-      sender: "contact",
-      time: "10:30 AM",
-    },
-    {
-      id: "2",
-      text: "Hi Sarah! It's going great, thanks for asking. Just finished a big project at work 🎉",
-      sender: "user",
-      time: "10:32 AM",
-    },
-    {
-      id: "3",
-      text: "That's awesome! Congratulations! 🎊 What was the project about?",
-      sender: "contact",
-      time: "10:33 AM",
-    },
-    {
-      id: "4",
-      text: "Thanks! It was a chat application - actually pretty similar to this one we're using right now 😄",
-      sender: "user",
-      time: "10:35 AM",
-    },
-    {
-      id: "5",
-      text: "Wow, that's so cool! I'd love to see it sometime. Building chat apps must be really interesting.",
-      sender: "contact",
-      time: "10:36 AM",
-    },
-    {
-      id: "6",
-      text: "Absolutely! There's so much that goes into making them feel smooth and intuitive. The real-time messaging, the UI/UX design, all the little details that make communication feel natural.",
-      sender: "user",
-      time: "10:38 AM",
-    },
-    {
-      id: "7",
-      text: "I can imagine! Speaking of which, this interface looks really clean and modern. Great job on the design! 👏",
-      sender: "contact",
-      time: "10:40 AM",
-    },
-    {
-      id: "1",
-      text: "Hey! How's your day going?",
-      sender: "contact",
-      time: "10:30 AM",
-    },
-    {
-      id: "2",
-      text: "Hi Sarah! It's going great, thanks for asking. Just finished a big project at work 🎉",
-      sender: "user",
-      time: "10:32 AM",
-    },
-    {
-      id: "3",
-      text: "That's awesome! Congratulations! 🎊 What was the project about?",
-      sender: "contact",
-      time: "10:33 AM",
-    },
-    {
-      id: "4",
-      text: "Thanks! It was a chat application - actually pretty similar to this one we're using right now 😄",
-      sender: "user",
-      time: "10:35 AM",
-    },
-    {
-      id: "5",
-      text: "Wow, that's so cool! I'd love to see it sometime. Building chat apps must be really interesting.",
-      sender: "contact",
-      time: "10:36 AM",
-    },
-    {
-      id: "6",
-      text: "Absolutely! There's so much that goes into making them feel smooth and intuitive. The real-time messaging, the UI/UX design, all the little details that make communication feel natural.",
-      sender: "user",
-      time: "10:38 AM",
-    },
-    {
-      id: "7",
-      text: "I can imagine! Speaking of which, this interface looks really clean and modern. Great job on the design! 👏",
-      sender: "contact",
-      time: "10:40 AM",
-    },
-  ];
+function ChatArea({ socketRef }) {
+  const { selectedContact } = useSelector((state) => state.global);
+  // const [chatMessages, setChatMessages] = useState([]);
+  const [messageText, setMessageText] = useState("");
+  const [contactDetails, setContactDetails] = useState(selectedContact);
+
+  const handleReceiveMessage = useCallback((message) => {
+    console.log("Received message:", message);
+    // setChatMessages((prev) => [...prev, message]);
+  }, []);
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!contactDetails || !socket) return;
+
+    const chatId = contactDetails._id;
+
+    socket.emit("join-chat", chatId);
+    socket.on("receive-message", handleReceiveMessage);
+
+    return () => {
+      socket.emit("leave-chat", chatId);
+      socket.off("receive-message", handleReceiveMessage);
+    };
+  }, [contactDetails?._id, handleReceiveMessage]);
+
+  const sendMessage = () => {
+    if (!socketRef.current) {
+      console.warn("Socket not connected");
+      return;
+    }
+
+    socketRef.current.emit("send-message", {
+      message: messageText,
+      chatId: selectedContact?._id,
+    });
+  };
+
   return (
     <div className="chat-container">
       <div className="chat-messages chat-scroll">
-        {messages.map((message, index) => (
+        {chatMessages.map((message, index) => (
           <MessageBubble
             key={index}
             text={message.text}
@@ -145,8 +57,17 @@ function ChatArea() {
 
       <div className="chat-input-bar">
         <div className="chat-input-row">
-          <input placeholder="Type a message..." className="chat-input-field" />
-          <button className="chat-send-btn">
+          <input
+            placeholder="Type a message..."
+            className="chat-input-field"
+            value={messageText}
+            onChange={(e) => setMessageText(e.target.value)}
+          />
+          <button
+            className="chat-send-btn"
+            onClick={() => sendMessage()}
+            disabled={!messageText.trim()}
+          >
             <SendHorizontal size={24} />
           </button>
         </div>
