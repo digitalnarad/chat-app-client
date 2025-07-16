@@ -339,12 +339,15 @@
   display: flex;
   flex-direction: column;
   gap: 16px; /* space-y-4 (16px) */
+  height: calc(100% - 80px);
+  position: relative;
 }
 
 .chat-input-bar {
   padding: 16px;
   background: #f9fafb; /* 'bg-chat-header' */
   border-top: 1px solid #e5e7eb; /* 'border-t border-border' */
+  height: 80px;
 }
 
 .chat-input-row {

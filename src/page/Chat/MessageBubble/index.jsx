@@ -1,7 +1,7 @@
 import React from "react";
 import "./MessageBubble.css";
-function MessageBubble({ text, sender, time }) {
-  const isUser = sender === "user";
+import dayjs from "dayjs";
+function MessageBubble({ text, isUser, time }) {
   return (
     <div
       className={`message-bubble-container ${
@@ -15,7 +15,7 @@ function MessageBubble({ text, sender, time }) {
       >
         <p className="message-text">{text}</p>
       </div>
-      <span className="message-time">{time}</span>
+      <span className="message-time">{dayjs(time).format("HH:mm")}</span>
     </div>
   );
 }
