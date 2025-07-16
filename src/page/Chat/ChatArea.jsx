@@ -1,17 +1,14 @@
 import { SendHorizontal } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import { useDispatch, useSelector } from "react-redux";
-import { chatMessages } from "./constant";
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../../services/api";
 import { handelCatch } from "../../store/globalSlice";
 
 function ChatArea({ socketRef }) {
   const dispatch = useDispatch();
   const { selectedContact } = useSelector((state) => state.global);
-  // const [chatMessages, setChatMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
-  const [contactDetails, setContactDetails] = useState(selectedContact);
   const [messages, setMessages] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -23,49 +20,42 @@ function ChatArea({ socketRef }) {
   const bottomRef = useRef(null);
   const observer = useRef(null);
 
-  // const handleReceiveMessage = useCallback((message) => {
-  //   console.log("Received message:", message);
-  //   setMessages((prev) => [...prev, message]);
-  //   if (isUserNearBottom()) {
-  //     scrollToBottom(); // auto scroll only if user is near bottom
-  //   }
-  // }, []);
+  const scrollToBottom = () => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const isUserNearBottom = () => {
+    const container = containerRef.current;
+    if (!container) return false;
+    const threshold = 150;
+    return (
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      threshold
+    );
+  };
 
   const handleReceiveMessage = useCallback((message) => {
-    console.log("Received message:", message);
     setMessages((prev) => [...prev, message]);
-
-    // Scroll after DOM updates
     setTimeout(() => {
-      if (isUserNearBottom()) {
-        scrollToBottom();
-      }
+      if (isUserNearBottom()) scrollToBottom();
     }, 100);
   }, []);
 
   useEffect(() => {
     const socket = socketRef.current;
-    if (!contactDetails || !socket) return;
-
-    const chatId = contactDetails._id;
-
+    if (!selectedContact || !socket) return;
+    const chatId = selectedContact._id;
     socket.emit("join-chat", chatId);
     socket.on("receive-message", handleReceiveMessage);
-
     return () => {
       socket.emit("leave-chat", chatId);
       socket.off("receive-message", handleReceiveMessage);
     };
-  }, [contactDetails?._id, handleReceiveMessage]);
+  }, [selectedContact?._id, handleReceiveMessage]);
 
   const sendMessage = () => {
-    if (!socketRef.current) {
-      dispatch(throwError("Socket not connected"));
-      return;
-    }
-
+    if (!socketRef.current) return;
     const nearBottom = isUserNearBottom();
-
     socketRef.current.emit(
       "send-message",
       {
@@ -75,78 +65,40 @@ function ChatArea({ socketRef }) {
       },
       (response) => {
         setMessageText("");
-        if (!response.success) {
-          dispatch(throwError(response.message));
-          return;
-        }
-
-        if (nearBottom) {
-          setTimeout(scrollToBottom, 100);
-        }
+        if (!response.success) dispatch(throwError(response.message));
+        if (nearBottom) setTimeout(scrollToBottom, 100);
       }
     );
   };
 
-  const fetchMessages = async () => {
+  const fetchMessages = async ({ isFirstLoad }) => {
     if (loading || !hasMore) return;
     setLoading(true);
-
     try {
       const res = await api.get(
         `/message/fetch-chats-messages/${selectedContact._id}?page=${page}&limit=20`
       );
-
-      if (res.status !== 200) {
-        dispatch(throwError(res.data.message));
-        return;
-      }
       const fetched = res?.data?.response || [];
-
-      if (fetched.length === 0) {
-        setHasMore(false);
-      } else {
+      if (fetched.length === 0) setHasMore(false);
+      else {
         setMessages((prev) => [...fetched.reverse(), ...prev]);
         setPage((prev) => prev + 1);
-        setTimeout(() => {
-          if (containerRef.current) {
-            containerRef.current.scrollTop =
-              containerRef.current.scrollHeight -
-              containerRef.current.clientHeight -
-              50;
-          }
-        }, 100);
       }
     } catch (err) {
-      console.error("Message fetch error:", err);
       dispatch(handelCatch(err));
     } finally {
       setLoading(false);
     }
   };
 
-  // 📌 Scroll handling
   const handleScroll = () => {
     if (!containerRef.current) return;
     const { scrollTop } = containerRef.current;
-    setShowScrollButton(scrollTop < -100);
+    setShowScrollButton(scrollTop < containerRef.current.scrollHeight - 1200);
   };
 
-  const scrollToBottom = () => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const isUserNearBottom = () => {
-    const container = containerRef.current;
-    if (!container) return false;
-    const threshold = 150; // px from bottom
-    return (
-      container.scrollHeight - container.scrollTop - container.clientHeight <
-      threshold
-    );
-  };
   useEffect(() => {
     if (!containerRef.current || !topRef.current) return;
-
     observer.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading) {
@@ -155,23 +107,13 @@ function ChatArea({ socketRef }) {
       },
       { root: containerRef.current, threshold: 0.1 }
     );
-
     observer.current.observe(topRef.current);
-
-    return () => {
-      observer.current?.disconnect();
-    };
+    return () => observer.current?.disconnect();
   }, [hasMore, loading]);
 
   useEffect(() => {
-    fetchMessages();
-  }, [contactDetails?._id]);
-
-  useEffect(() => {
-    if (page === 2) {
-      setTimeout(scrollToBottom, 100);
-    }
-  }, [messages]);
+    fetchMessages({ isFirstLoad: true });
+  }, [selectedContact?._id]);
 
   return (
     <div className="chat-container">
@@ -189,28 +131,19 @@ function ChatArea({ socketRef }) {
             time={message?.createdAt}
           />
         ))}
-
         <div ref={bottomRef} />
         {showScrollButton && (
           <button
             onClick={scrollToBottom}
             style={{
-              position: "absolute",
-              bottom: "60px",
-              right: "20px",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              background: "#333",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
+              left: "calc(50% - 25px)",
             }}
+            className="scroll-to-bottom-btn"
           >
-            ↓ Scroll to Bottom
+            ↓
           </button>
         )}
       </div>
-
       <div className="chat-input-bar">
         <div className="chat-input-row">
           <input
@@ -221,7 +154,7 @@ function ChatArea({ socketRef }) {
           />
           <button
             className="chat-send-btn"
-            onClick={() => sendMessage()}
+            onClick={sendMessage}
             disabled={!messageText.trim()}
           >
             <SendHorizontal size={24} />
