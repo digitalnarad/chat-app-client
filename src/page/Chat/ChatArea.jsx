@@ -1,9 +1,11 @@
-import { SendHorizontal } from "lucide-react";
+import { ChevronDown, SendHorizontal } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import { useDispatch, useSelector } from "react-redux";
 import { useCallback, useEffect, useRef, useState } from "react";
+import InfiniteScroll from "react-infinite-scroll-component";
 import api from "../../services/api";
 import { handelCatch } from "../../store/globalSlice";
+import { Spinner } from "react-bootstrap";
 
 function ChatArea({ socketRef }) {
   const dispatch = useDispatch();
@@ -13,18 +15,15 @@ function ChatArea({ socketRef }) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [showScrollButton, setShowScrollButton] = useState(false);
 
   const containerRef = useRef(null);
-  const topRef = useRef(null);
-  const bottomRef = useRef(null);
-  const observer = useRef(null);
+  const scrollBottomRef = useRef(null);
 
   const scrollToBottom = () => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const isUserNearBottom = () => {
+  const isNearBottom = () => {
     const container = containerRef.current;
     if (!container) return false;
     const threshold = 150;
@@ -36,10 +35,70 @@ function ChatArea({ socketRef }) {
 
   const handleReceiveMessage = useCallback((message) => {
     setMessages((prev) => [...prev, message]);
-    setTimeout(() => {
-      if (isUserNearBottom()) scrollToBottom();
-    }, 100);
+    if (isNearBottom()) scrollToBottom();
   }, []);
+
+  const sendMessage = () => {
+    if (!socketRef.current) return;
+    const nearBottom = isNearBottom();
+    socketRef.current.emit(
+      "send-message",
+      {
+        message: messageText,
+        chat_id: selectedContact?._id,
+        message_type: "text",
+      },
+      (response) => {
+        setMessageText("");
+        if (!response.success) dispatch(throwError(response.message));
+        if (nearBottom) scrollToBottom();
+      }
+    );
+  };
+  const fetchMessages = async () => {
+    if (loading || !hasMore) return;
+    setLoading(true);
+
+    const container = containerRef.current;
+    const previousScrollHeight = container?.scrollHeight || 0;
+
+    try {
+      const res = await api.get(
+        `/message/fetch-chats-messages/${selectedContact._id}?page=${page}&limit=20`
+      );
+
+      const fetched = res?.data?.response || [];
+
+      if (fetched.length === 0) {
+        setHasMore(false);
+      } else {
+        setMessages((prev) => [...fetched, ...prev]);
+        setPage((prev) => prev + 1);
+
+        // ✅ Wait for DOM to fully paint new messages, then adjust scroll
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            const newScrollHeight = container?.scrollHeight || 0;
+            const scrollOffset = newScrollHeight - previousScrollHeight;
+            container.scrollTop = container.scrollTop + scrollOffset;
+          });
+        }, 0);
+      }
+    } catch (err) {
+      dispatch(handelCatch(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedContact?._id) {
+      setMessages([]);
+      setPage(1);
+      setHasMore(true);
+      fetchMessages();
+    }
+  }, [selectedContact?._id]);
 
   useEffect(() => {
     const socket = socketRef.current;
@@ -53,97 +112,60 @@ function ChatArea({ socketRef }) {
     };
   }, [selectedContact?._id, handleReceiveMessage]);
 
-  const sendMessage = () => {
-    if (!socketRef.current) return;
-    const nearBottom = isUserNearBottom();
-    socketRef.current.emit(
-      "send-message",
-      {
-        message: messageText,
-        chat_id: selectedContact?._id,
-        message_type: "text",
-      },
-      (response) => {
-        setMessageText("");
-        if (!response.success) dispatch(throwError(response.message));
-        if (nearBottom) setTimeout(scrollToBottom, 100);
-      }
-    );
-  };
-
-  const fetchMessages = async ({ isFirstLoad }) => {
-    if (loading || !hasMore) return;
-    setLoading(true);
-    try {
-      const res = await api.get(
-        `/message/fetch-chats-messages/${selectedContact._id}?page=${page}&limit=20`
-      );
-      const fetched = res?.data?.response || [];
-      if (fetched.length === 0) setHasMore(false);
-      else {
-        setMessages((prev) => [...fetched.reverse(), ...prev]);
-        setPage((prev) => prev + 1);
-      }
-    } catch (err) {
-      dispatch(handelCatch(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleScroll = () => {
-    if (!containerRef.current) return;
-    const { scrollTop } = containerRef.current;
-    setShowScrollButton(scrollTop < containerRef.current.scrollHeight - 1200);
-  };
-
-  useEffect(() => {
-    if (!containerRef.current || !topRef.current) return;
-    observer.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          fetchMessages();
-        }
-      },
-      { root: containerRef.current, threshold: 0.1 }
-    );
-    observer.current.observe(topRef.current);
-    return () => observer.current?.disconnect();
-  }, [hasMore, loading]);
-
-  useEffect(() => {
-    fetchMessages({ isFirstLoad: true });
-  }, [selectedContact?._id]);
-
   return (
     <div className="chat-container">
       <div
         className="chat-messages chat-scroll"
-        onScroll={handleScroll}
+        id="scrollableChatArea"
         ref={containerRef}
+        style={{
+          height: "100%",
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column-reverse",
+        }}
       >
-        <div ref={topRef}></div>
-        {messages.map((message, index) => (
-          <MessageBubble
-            key={index}
-            text={message.message}
-            isUser={message?.sender !== selectedContact?.participant?._id}
-            time={message?.createdAt}
-          />
-        ))}
-        <div ref={bottomRef} />
-        {showScrollButton && (
-          <button
-            onClick={scrollToBottom}
-            style={{
-              left: "calc(50% - 25px)",
-            }}
-            className="scroll-to-bottom-btn"
-          >
-            ↓
-          </button>
-        )}
+        <InfiniteScroll
+          dataLength={messages.length}
+          next={fetchMessages}
+          hasMore={hasMore}
+          inverse={true}
+          scrollableTarget="scrollableChatArea"
+          loader={null}
+          endMessage={null}
+        >
+          <div ref={scrollBottomRef} />
+          {loading && (
+            <div
+              className="top-loader"
+              style={{ textAlign: "center", margin: "8px" }}
+            >
+              <Spinner animation="grow" size="sm" />
+            </div>
+          )}
+
+          {!hasMore && messages.length > 0 && (
+            <div
+              className="top-end"
+              style={{ textAlign: "center", color: "gray", margin: "8px" }}
+            >
+              You've reached the beginning.
+            </div>
+          )}
+          {messages.map((message, index) => {
+            return (
+              <MessageBubble
+                key={index}
+                text={message.message}
+                sender={message?.sender}
+                time={message?.createdAt}
+              />
+            );
+          })}
+          <div ref={scrollBottomRef} />
+        </InfiniteScroll>
       </div>
+
       <div className="chat-input-bar">
         <div className="chat-input-row">
           <input

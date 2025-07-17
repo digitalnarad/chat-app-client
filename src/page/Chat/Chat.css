@@ -330,10 +330,10 @@
   flex-direction: column;
   background: #f3f4f6; /* Replace with your 'bg-chat-background' */
   height: calc(100% - 90px); /* If you want to fill parent height */
+  position: relative;
 }
 
 .chat-messages {
-  flex: 1;
   overflow-y: auto;
   padding: 10px 16px;
   display: flex;
@@ -341,12 +341,9 @@
   gap: 10px;
   height: calc(100% - 80px);
   width: 100%;
-  position: relative;
 }
 
 .scroll-to-bottom-btn {
-  position: sticky;
-  bottom: 10px;
   width: 50px;
   min-height: 50px;
   height: 50px;
@@ -358,7 +355,26 @@
   color: white;
   border: none;
   cursor: pointer;
-  font-size: 20px;
+  transition-duration: 0.3s;
+  box-shadow: inset 0px -5px 10px rgba(0, 0, 0, 0.1),
+    inset 0px 5px 15px rgba(255, 255, 255, 0.2);
+  z-index: 1000;
+  animation: bounceUpDown 2s ease-in-out infinite;
+}
+
+.scroll-to-bottom-btn:hover {
+  background: #2563eb;
+}
+
+/* 👇 Add this at the bottom of your CSS */
+@keyframes bounceUpDown {
+  0%,
+  100% {
+    transform: translateY(0) scale(0.8);
+  }
+  50% {
+    transform: translateY(-10px) scale(0.8);
+  }
 }
 
 .chat-input-bar {

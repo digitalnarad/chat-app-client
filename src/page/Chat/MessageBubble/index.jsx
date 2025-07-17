@@ -1,7 +1,12 @@
 import React from "react";
 import "./MessageBubble.css";
 import dayjs from "dayjs";
-function MessageBubble({ text, isUser, time }) {
+import { useSelector } from "react-redux";
+function MessageBubble({ text, sender, time }) {
+  const { selectedContact } = useSelector((state) => state.global);
+
+  const isUser = sender !== selectedContact?.participant?._id;
+
   return (
     <div
       className={`message-bubble-container ${
@@ -20,4 +25,4 @@ function MessageBubble({ text, isUser, time }) {
   );
 }
 
-export default MessageBubble;
+export default React.memo(MessageBubble);
