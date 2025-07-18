@@ -52,6 +52,7 @@ function ChatLayout() {
     });
 
     socket.on("update-user-status", handleStatusUpdate);
+    socket.on("update-user-contact", handleContactUpdate);
 
     socket.on("disconnect", () => {
       setUserStatus("offline");
@@ -63,6 +64,14 @@ function ChatLayout() {
       socket.disconnect();
     };
   }, []);
+
+  const handleContactUpdate = ({ contact }) => {
+    dispatch(
+      setContacts(
+        contactsRef.current.map((c) => (c._id === contact._id ? contact : c))
+      )
+    );
+  };
 
   const handleStatusUpdate = ({ userId, status, at }) => {
     const activeStatus = { status, at };
@@ -118,9 +127,7 @@ function ChatLayout() {
         </div>
         <div className="chat-layout-chat-area">
           <ChatHeader />
-          {selectedContact && socketRef.current && (
-            <ChatArea socketRef={socketRef} />
-          )}
+          <ChatArea socketRef={socketRef} />
         </div>
       </div>
     </div>

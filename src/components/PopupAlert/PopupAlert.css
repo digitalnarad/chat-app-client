@@ -59,11 +59,11 @@
 }
 
 #PopupAlert-container .alert-msg-success {
-  border-left: 4px solid var(--8754) !important;
+  border-left: 4px solid rgba(188, 241, 117, 0.267) !important;
 }
 
 #PopupAlert-container .alert-msg-danger {
-  border-left: 4px solid var(--dc35) !important;
+  border-left: 4px solid rgba(235, 77, 77, 0.333) !important;
 }
 
 @media (max-width: 660px) {

@@ -118,3 +118,18 @@
   color: #2f7eff;
   transition: color 0.3s ease;
 }
+
+.verified-user {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.success-user {
+  color: green;
+}
+.error-user {
+  color: red;
+}

@@ -6,10 +6,12 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import api from "../../services/api";
 import { handelCatch } from "../../store/globalSlice";
 import { Spinner } from "react-bootstrap";
+import CrazyLoader from "../../components/CrazyLoader";
 
 function ChatArea({ socketRef }) {
   const dispatch = useDispatch();
   const { selectedContact } = useSelector((state) => state.global);
+  const [chatId, setChatId] = useState("");
   const [messageText, setMessageText] = useState("");
   const [messages, setMessages] = useState([]);
   const [page, setPage] = useState(1);
@@ -18,6 +20,16 @@ function ChatArea({ socketRef }) {
 
   const containerRef = useRef(null);
   const scrollBottomRef = useRef(null);
+
+  useEffect(() => {
+    if (selectedContact?._id) {
+      console.log("selectedContact?._id", selectedContact?._id);
+      setChatId(selectedContact._id);
+      setMessages([]);
+      setPage(1);
+      setHasMore(true);
+    }
+  }, [selectedContact?._id]);
 
   const scrollToBottom = () => {
     scrollBottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -45,7 +57,7 @@ function ChatArea({ socketRef }) {
       "send-message",
       {
         message: messageText,
-        chat_id: selectedContact?._id,
+        chat_id: chatId,
         message_type: "text",
       },
       (response) => {
@@ -55,16 +67,16 @@ function ChatArea({ socketRef }) {
       }
     );
   };
+
   const fetchMessages = async () => {
     if (loading || !hasMore) return;
-    setLoading(true);
 
     const container = containerRef.current;
     const previousScrollHeight = container?.scrollHeight || 0;
 
     try {
       const res = await api.get(
-        `/message/fetch-chats-messages/${selectedContact._id}?page=${page}&limit=20`
+        `/message/fetch-chats-messages/${chatId}?page=${page}&limit=20`
       );
 
       const fetched = res?.data?.response || [];
@@ -75,13 +87,10 @@ function ChatArea({ socketRef }) {
         setMessages((prev) => [...fetched, ...prev]);
         setPage((prev) => prev + 1);
 
-        // ✅ Wait for DOM to fully paint new messages, then adjust scroll
         setTimeout(() => {
-          requestAnimationFrame(() => {
-            const newScrollHeight = container?.scrollHeight || 0;
-            const scrollOffset = newScrollHeight - previousScrollHeight;
-            container.scrollTop = container.scrollTop + scrollOffset;
-          });
+          const newScrollHeight = container?.scrollHeight || 0;
+          const delta = newScrollHeight - previousScrollHeight;
+          container.scrollTop += delta - 40;
         }, 0);
       }
     } catch (err) {
@@ -92,25 +101,22 @@ function ChatArea({ socketRef }) {
   };
 
   useEffect(() => {
-    if (selectedContact?._id) {
-      setMessages([]);
-      setPage(1);
-      setHasMore(true);
-      fetchMessages();
-    }
-  }, [selectedContact?._id]);
-
-  useEffect(() => {
     const socket = socketRef.current;
-    if (!selectedContact || !socket) return;
-    const chatId = selectedContact._id;
+    if (!chatId || !socket) return;
     socket.emit("join-chat", chatId);
     socket.on("receive-message", handleReceiveMessage);
     return () => {
       socket.emit("leave-chat", chatId);
       socket.off("receive-message", handleReceiveMessage);
     };
-  }, [selectedContact?._id, handleReceiveMessage]);
+  }, [chatId, handleReceiveMessage]);
+
+  useEffect(() => {
+    if (chatId) {
+      setLoading(true);
+      fetchMessages();
+    }
+  }, [chatId]);
 
   return (
     <div className="chat-container">
@@ -127,7 +133,12 @@ function ChatArea({ socketRef }) {
       >
         <InfiniteScroll
           dataLength={messages.length}
-          next={fetchMessages}
+          next={(e) => {
+            setLoading(true);
+            setTimeout(() => {
+              fetchMessages();
+            }, 1000);
+          }}
           hasMore={hasMore}
           inverse={true}
           scrollableTarget="scrollableChatArea"
@@ -140,7 +151,13 @@ function ChatArea({ socketRef }) {
               className="top-loader"
               style={{ textAlign: "center", margin: "8px" }}
             >
-              <Spinner animation="grow" size="sm" />
+              <Spinner
+                animation="border"
+                size="lg"
+                style={{ color: "#2563eb" }}
+              />
+
+              {/* <CrazyLoader /> */}
             </div>
           )}
 
@@ -155,7 +172,7 @@ function ChatArea({ socketRef }) {
           {messages.map((message, index) => {
             return (
               <MessageBubble
-                key={index}
+                key={message._id}
                 text={message.message}
                 sender={message?.sender}
                 time={message?.createdAt}

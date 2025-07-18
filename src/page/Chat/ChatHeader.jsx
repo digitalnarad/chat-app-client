@@ -4,7 +4,6 @@ import { parseTimeAndDate } from "../../assets/helper";
 
 function ChatHeader() {
   const { selectedContact } = useSelector((state) => state.global);
-  console.log("selectedContact", selectedContact);
 
   const {
     firstName = "",
