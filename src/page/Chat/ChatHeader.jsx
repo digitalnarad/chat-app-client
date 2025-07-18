@@ -6,23 +6,23 @@ function ChatHeader() {
   const { selectedContact } = useSelector((state) => state.global);
 
   const {
-    firstName = "",
-    lastName = "",
-    activeStatus = {},
+    first_name = "",
+    last_name = "",
+    active_status = {},
   } = selectedContact?.participant || {};
 
   return (
     <div className="chat-header">
       <div className="chat-header-row">
         <div className="chat-header-info">
-          <div className="chat-header-avatar">{`${firstName[0]}${lastName[0]}`}</div>
+          <div className="chat-header-avatar">{`${first_name[0]}${last_name[0]}`}</div>
           <div>
-            <h2 className="chat-header-name">{`${firstName} ${lastName}`}</h2>
+            <h2 className="chat-header-name">{`${first_name} ${last_name}`}</h2>
             <p className="chat-header-status">
-              {activeStatus?.status === "online"
+              {active_status?.status === "online"
                 ? "Online"
                 : `Offline at ${
-                    activeStatus?.at ? parseTimeAndDate(activeStatus?.at) : ""
+                    active_status?.at ? parseTimeAndDate(active_status?.at) : ""
                   }`}
             </p>
           </div>

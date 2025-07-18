@@ -1,7 +1,10 @@
 import axios from "axios";
 
+// const baseURL = "http://localhost:8000/api/v1";
+const baseURL = "https://chat-app-server-54ar.onrender.com/api/v1";
+
 const api = axios.create({
-  baseURL: "http://localhost:8000/api/v1",
+  baseURL: baseURL,
   headers: { "Content-Type": "application/json" },
   withCredentials: false, // flip to true if you need cookies
 });
