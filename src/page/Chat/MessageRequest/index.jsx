@@ -63,7 +63,6 @@ function MessageRequest({ show, onHide, requestList, fetchAllRequest }) {
         </div>
         <div className="message-request-box chat-scroll">
           {requestList.map((ele) => {
-            console.log("ele", ele);
             const { first_name, last_name, user_name } = ele.senderDetails;
             return (
               <div className="message-request-item" key={ele._id}>

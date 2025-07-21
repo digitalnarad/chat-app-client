@@ -21,13 +21,10 @@ function AddNewChat({ show, onHide, socketRef }) {
   const [isLoadRequest, setIsLoadRequests] = useState(false);
 
   const fetchUsers = async (search_str) => {
-    console.log("search_str", search_str);
     try {
       const res = await api.post(`/user/get-search-users`, { search_str });
-      console.log("res", res);
       if (res.status === 200) {
         const users = res.data?.response || [];
-        console.log("users", users);
         setSearchUsers(users);
       } else {
         dispatch(throwError(res.data.message));

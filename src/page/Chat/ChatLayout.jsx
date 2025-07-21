@@ -12,12 +12,19 @@ import {
   setSelectedContact,
   throwError,
 } from "../../store/globalSlice";
+import AddNewChat from "./AddNewChat";
+import MessageRequest from "./MessageRequest";
 
 function ChatLayout() {
   const socketRef = useRef(null);
   const dispatch = useDispatch();
-  const { contacts, selectedContact } = useSelector((state) => state.global);
+  const { contacts, selectedContact, socketConnected } = useSelector(
+    (state) => state.global
+  );
   const [userStatus, setUserStatus] = useState("online");
+  const [isAddNewChat, setIsAddNewChat] = useState(false);
+  const [isMessageRequest, setIsMessageRequest] = useState(false);
+  const [requests, setRequests] = useState([]);
 
   const contactsRef = useRef([]);
   const selectedContactRef = useRef(null);
@@ -31,44 +38,50 @@ function ChatLayout() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    // if (contacts.length === 0) {
-    //   console.warn("No contacts found, fetching...");
-    //   fetchAllContacts();
-    //   return;
-    // }
+
     if (!token) {
       console.warn("No token found");
       return;
     }
 
-    const socket = createSocket(token);
-    socketRef.current = socket;
+    if (token && !socketConnected) {
+      dispatch({ type: "socket/connect" });
+    }
 
-    socket.connect();
+    // const socket = createSocket(token);
+    // socketRef.current = socket;
 
-    socket.on("connect", () => {
-      setUserStatus("online");
-      console.log("Socket connected");
-    });
+    // socket.connect();
 
-    socket.on("update-user-status", handleStatusUpdate);
-    socket.on("update-user-contact", handleContactUpdate);
+    // socket.on("connect", () => {
+    //   setUserStatus("online");
+    //   console.log("Socket connected");
+    // });
 
-    socket.on("disconnect", () => {
-      setUserStatus("offline");
-      console.log("Socket disconnected");
-    });
+    // socket.on("update-user-status", handleStatusUpdate);
+    // socket.on("update-user-last-message", handleContactUpdate);
 
-    return () => {
-      socket.off("update-user-status", handleStatusUpdate);
-      socket.disconnect();
-    };
+    // socket.on("disconnect", () => {
+    //   setUserStatus("offline");
+    //   console.log("Socket disconnected");
+    // });
+
+    // return () => {
+    //   socket.off("update-user-status", handleStatusUpdate);
+    //   socket.off("update-user-last-message", handleContactUpdate);
+
+    //   socket.disconnect();
+    // };
   }, []);
 
-  const handleContactUpdate = ({ contact }) => {
+  const handleContactUpdate = (lastMessage) => {
+    console.log("lastMessage", lastMessage);
+    console.log("contactsRef.current", contactsRef.current);
     dispatch(
       setContacts(
-        contactsRef.current.map((c) => (c._id === contact._id ? contact : c))
+        contactsRef.current.map((c) =>
+          c._id === lastMessage.chat_id ? { ...c, lastMessage: lastMessage } : c
+        )
       )
     );
   };
@@ -106,6 +119,7 @@ function ChatLayout() {
       if (res.status === 200) {
         // Handle successful response
         const chats = res.data.response || [];
+
         dispatch(setContacts(chats));
         dispatch(setSelectedContact(chats[0] || null));
       } else {
@@ -116,11 +130,43 @@ function ChatLayout() {
     }
   };
 
+  const fetchAllRequest = async () => {
+    try {
+      const res = await api.get("/request/fetch-all-requests");
+      if (res.status === 200) {
+        setRequests(res?.data?.response || []);
+      } else {
+        dispatch(throwError(res.data.message));
+      }
+    } catch (err) {
+      dispatch(handelCatch(err));
+    }
+  };
+
+  // useEffect(() => {}, []);
+
   useEffect(() => {
     fetchAllContacts();
+    fetchAllRequest();
   }, []);
+
   return (
     <div className="chat-layout-component">
+      {isAddNewChat && (
+        <AddNewChat
+          show={isAddNewChat}
+          onHide={() => setIsAddNewChat(false)}
+          socketRef={socketRef}
+        />
+      )}
+      {isMessageRequest && (
+        <MessageRequest
+          requestList={requests}
+          show={isMessageRequest}
+          onHide={() => setIsMessageRequest(false)}
+          fetchAllRequest={fetchAllRequest}
+        />
+      )}
       <div className="chat-layout">
         <div className="chat-layout-sidebar">
           <ChatSidebar socketRef={socketRef} />

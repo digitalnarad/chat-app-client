@@ -1,7 +1,7 @@
 import axios from "axios";
 
-// const baseURL = "http://localhost:8000/api/v1";
-const baseURL = "https://chat-app-server-54ar.onrender.com/api/v1";
+const baseURL = "http://localhost:8000/api/v1";
+// const baseURL = "https://chat-app-server-54ar.onrender.com/api/v1";
 
 const api = axios.create({
   baseURL: baseURL,
@@ -21,10 +21,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (res) => res,
   (error) => {
-    // Example: auto-logout on 401
-    if (error.response?.status === 401) {
-      dispatch(logout());
-    }
     return Promise.reject(error);
   }
 );

@@ -17,6 +17,7 @@ function ChatArea({ socketRef }) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [lastMessageTime, setLastMessageTime] = useState(null);
 
   const containerRef = useRef(null);
   const scrollBottomRef = useRef(null);
@@ -28,6 +29,7 @@ function ChatArea({ socketRef }) {
       setMessages([]);
       setPage(1);
       setHasMore(true);
+      setLastMessageTime(null);
     }
   }, [selectedContact?._id]);
 
@@ -76,7 +78,9 @@ function ChatArea({ socketRef }) {
 
     try {
       const res = await api.get(
-        `/message/fetch-chats-messages/${chatId}?page=${page}&limit=20`
+        `/message/fetch-chats-messages/${chatId}?page=${page}&limit=20${
+          lastMessageTime && "&last_message_time=" + lastMessageTime
+        }`
       );
 
       const fetched = res?.data?.response || [];
@@ -86,6 +90,9 @@ function ChatArea({ socketRef }) {
       } else {
         setMessages((prev) => [...fetched, ...prev]);
         setPage((prev) => prev + 1);
+
+        const oldestMessage = fetched[fetched.length - 1];
+        setLastMessageTime(oldestMessage.createdAt);
 
         setTimeout(() => {
           const newScrollHeight = container?.scrollHeight || 0;

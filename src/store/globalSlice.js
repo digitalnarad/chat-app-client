@@ -1,17 +1,35 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  authData: "",
+  // Auth state
+  authData: null,
+  authToken: localStorage.getItem("token") || null,
+
+  // UI state
   errorData: {
     show: false,
     message: "",
     type: "",
   },
-  authToken: "",
+
+  // Chat state - expanded for socket integration
   contacts: [],
   selectedContact: null,
-};
+  messages: [],
+  onlineUsers: {},
+  typingUsers: {},
+  requests: [],
 
+  // Socket state - ADD THIS
+  socketConnected: false,
+
+  // Loading states
+  loading: {
+    contacts: false,
+    messages: false,
+    sendingMessage: false,
+  },
+};
 const globalSlice = createSlice({
   name: "global",
   initialState,
@@ -30,6 +48,17 @@ const globalSlice = createSlice({
     },
     setSelectedContact(state, action) {
       state.selectedContact = action.payload;
+    },
+
+    socketConnected(state, action) {
+      state.socketConnected =
+        action.payload !== undefined ? action.payload : true;
+    },
+
+    socketDisconnected(state) {
+      state.socketConnected = false;
+      state.onlineUsers = {};
+      state.typingUsers = {};
     },
   },
 });
@@ -90,6 +119,8 @@ export const {
   setAuthToken,
   setContacts,
   setSelectedContact,
+  socketConnected,
+  socketDisconnected,
 } = globalSlice.actions;
 
 export default globalSlice.reducer;

@@ -21,6 +21,12 @@ function ChatSidebar({ socketRef }) {
   const [isMessageRequest, setIsMessageRequest] = useState(false);
   const [requests, setRequests] = useState([]);
 
+  const [chats, setChats] = useState([]);
+
+  useEffect(() => {
+    setChats(contacts);
+  }, [contacts]);
+
   const getRequestCount = useMemo(() => {
     return requests.length;
   }, [requests.length]);
@@ -104,12 +110,10 @@ function ChatSidebar({ socketRef }) {
         </div>
       </div>
       <div className="contact-list chat-scroll">
-        {(contacts || []).map((contact, index) => {
-          console.log("contact", contact);
+        {(chats || []).map((contact, index) => {
           const { participant } = contact;
           const selected = selectedContact?._id === contact._id;
           const isYou = !participant?._id;
-          console.log("isYou", isYou);
           return (
             <div
               key={contact._id}

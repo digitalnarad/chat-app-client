@@ -64,7 +64,6 @@ function Signin() {
   };
 
   const verifiedUserNameFunc = async (user_name) => {
-    console.log("54145");
     try {
       if (!user_name) {
         setUserVerifiedStatus({
