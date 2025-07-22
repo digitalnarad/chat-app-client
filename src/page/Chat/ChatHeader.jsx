@@ -1,15 +1,30 @@
 import { Search, Settings } from "lucide-react";
 import { useSelector } from "react-redux";
 import { parseTimeAndDate } from "../../assets/helper";
+import { useMemo } from "react";
 
 function ChatHeader() {
-  const { selectedContact } = useSelector((state) => state.global);
+  const { selectedContact, contacts } = useSelector((state) => state.global);
+
+  const memoizedSelectedContact = useMemo(() => {
+    if (!selectedContact?._id) return {};
+
+    const chat =
+      contacts.find((contact) => contact._id === selectedContact._id) || {};
+    console.log("chat", chat);
+
+    return chat;
+  }, [
+    selectedContact?._id, // Only watch ID changes
+    contacts?.length, // Watch array length changes
+    JSON.stringify(contacts?.find((c) => c._id === selectedContact?._id)), // Only stringify the found contact
+  ]);
 
   const {
     first_name = "",
     last_name = "",
     active_status = {},
-  } = selectedContact?.participant || {};
+  } = memoizedSelectedContact?.participant || {};
 
   return (
     <div className="chat-header">

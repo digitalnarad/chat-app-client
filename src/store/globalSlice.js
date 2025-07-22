@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import api from "../services/api";
 
 const initialState = {
   // Auth state
@@ -16,8 +17,8 @@ const initialState = {
   contacts: [],
   selectedContact: null,
   messages: [],
-  onlineUsers: {},
-  typingUsers: {},
+  onlineUsers: [],
+  typingUsers: [],
   requests: [],
 
   // Socket state - ADD THIS
@@ -27,6 +28,7 @@ const initialState = {
   loading: {
     contacts: false,
     messages: false,
+    request: false,
     sendingMessage: false,
   },
 };
@@ -43,32 +45,81 @@ const globalSlice = createSlice({
     setAuthToken(state, action) {
       state.authToken = action.payload;
     },
-    setContacts(state, action) {
-      state.contacts = action.payload;
-    },
-    setSelectedContact(state, action) {
-      state.selectedContact = action.payload;
-    },
 
     socketConnected(state, action) {
       state.socketConnected =
         action.payload !== undefined ? action.payload : true;
     },
 
+    // chats related actions
     socketDisconnected(state) {
       state.socketConnected = false;
       state.onlineUsers = {};
       state.typingUsers = {};
+    },
+
+    setSelectedContact(state, action) {
+      state.selectedContact = action.payload;
+    },
+
+    setContacts(state, action) {
+      state.contacts = JSON.parse(JSON.stringify(action.payload));
+    },
+
+    setMessages(state, action) {
+      state.messages = JSON.parse(JSON.stringify(action.payload));
+    },
+
+    addOnlineUsers(state, action) {
+      state.onlineUsers = [...state.onlineUsers, action.payload];
+    },
+
+    removeOnlineUsers(state, action) {
+      state.onlineUsers = state.onlineUsers.filter(
+        (user) => user !== action.payload
+      );
+    },
+
+    addTypingUsers(state, action) {
+      state.typingUsers = [...state.typingUsers, action.payload];
+    },
+
+    removeTypingUsers(state, action) {
+      state.typingUsers = state.typingUsers.filter(
+        (user) => user !== action.payload
+      );
+    },
+
+    setRequests(state, action) {
+      state.requests = action.payload;
+    },
+
+    // Loading states
+    setContactsLoading(state, action) {
+      state.loading.contacts = action.payload;
+    },
+    setMessagesLoading(state, action) {
+      state.loading.messages = action.payload;
+    },
+    setSendingMessageLoading(state, action) {
+      state.loading.sendingMessage = action.payload;
+    },
+    setRequestLoading(state, action) {
+      state.loading.request = action.payload;
     },
   },
 });
 
 export const handelCatch = (error) => async (dispatch) => {
   let status = error?.response?.status;
-  let messsage = error?.response?.data?.message || "Something went wrong!";
+  let message =
+    error?.response?.data?.message ||
+    error?.message ||
+    error?.response?.data?.error ||
+    "Something went wrong!";
   let returnCatch = {
     status: status,
-    messsage: messsage,
+    message: message,
   };
   if (status === 401) {
     dispatch(throwError("Session is expired"));
@@ -78,7 +129,7 @@ export const handelCatch = (error) => async (dispatch) => {
     dispatch(
       setErrorData({
         show: true,
-        message: messsage,
+        message: message,
         type: "error",
       })
     );
@@ -110,7 +161,27 @@ export const throwError = (message) => async (dispatch) => {
 
 export const logout = () => async (dispatch) => {
   dispatch(setAuthToken(null));
+  dispatch(setAuthData(null));
   localStorage.removeItem("token");
+};
+
+export const verifyToken = (token) => async (dispatch) => {
+  try {
+    const res = await api.get("/user/token-verification");
+    console.log("res", res);
+    if (res.status === 200) {
+      dispatch(setAuthToken(token));
+      dispatch(setAuthData(res?.data?.response));
+      return;
+    }
+    dispatch(throwError(res.data.message));
+    dispatch(setAuthToken(null));
+    dispatch(setAuthData(null));
+  } catch (error) {
+    dispatch(handelCatch(error));
+    dispatch(setAuthToken(null));
+    dispatch(setAuthData(null));
+  }
 };
 
 export const {
@@ -121,6 +192,15 @@ export const {
   setSelectedContact,
   socketConnected,
   socketDisconnected,
+  addOnlineUsers,
+  removeOnlineUsers,
+  addTypingUsers,
+  removeTypingUsers,
+  setRequests,
+  setContactsLoading,
+  setMessagesLoading,
+  setSendingMessageLoading,
+  setRequestLoading,
 } = globalSlice.actions;
 
 export default globalSlice.reducer;

@@ -10,7 +10,8 @@ import {
   socketDisconnected,
   setAuthToken,
   setAuthData,
-} from "./globalSlice";
+} from "../store/globalSlice";
+import { socketFunctions } from "./socketFunctions";
 
 // ✅ Declare socket at module level
 let socket = null;
@@ -35,7 +36,7 @@ const socketMiddleware = (store) => (next) => (action) => {
     // Handle connection success
     socket.on("connect", () => {
       console.log("✅ Socket connected successfully");
-      store.dispatch(socketConnected());
+      store.dispatch(socketConnected(true));
     });
 
     // Handle connection error (invalid token, etc.)
@@ -58,10 +59,10 @@ const socketMiddleware = (store) => (next) => (action) => {
       store.dispatch(socketDisconnected());
     });
 
+    const socketFunc = socketFunctions(store);
+
     // ✅ Set up all your socket listeners using the action creators
-    socket.on("update-user-status", (data) => {
-      console.log("update-user-status", data);
-    });
+    socket.on("update-user-status", socketFunc.updateUserStatus);
 
     socket.on("receive-message", (message) => {
       console.log("receive-message", message);
@@ -127,11 +128,17 @@ const socketMiddleware = (store) => (next) => (action) => {
 
   if (action.type === "socket/emit") {
     const { event, data, callback } = action.payload;
+    if (event === "leave-chat") {
+      console.log("event", event);
+    }
 
     if (!socket) {
       console.log("❌ Socket not connected, cannot emit event:", event);
       if (callback)
-        callback({ success: false, message: "Socket not connected" });
+        callback({
+          success: false,
+          message: "Socket not connected",
+        });
       return next(action);
     }
 
@@ -139,6 +146,7 @@ const socketMiddleware = (store) => (next) => (action) => {
   }
 
   if (action.type === "socket/disconnect") {
+    console.log("socket/disconnect", socket);
     if (socket) {
       socket.disconnect();
       socket = null;

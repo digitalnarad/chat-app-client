@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import globalSlice from "./globalSlice";
-import socketMiddleware from "./socketMiddleware";
+import socketMiddleware from "../socket/socketMiddleware";
 
 const store = configureStore({
   reducer: {

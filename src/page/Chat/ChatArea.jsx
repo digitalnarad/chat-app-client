@@ -4,11 +4,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { useCallback, useEffect, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import api from "../../services/api";
-import { handelCatch } from "../../store/globalSlice";
+import { handelCatch, throwError } from "../../store/globalSlice";
 import { Spinner } from "react-bootstrap";
 import CrazyLoader from "../../components/CrazyLoader";
 
-function ChatArea({ socketRef }) {
+function ChatArea({}) {
   const dispatch = useDispatch();
   const { selectedContact } = useSelector((state) => state.global);
   const [chatId, setChatId] = useState("");
@@ -24,7 +24,6 @@ function ChatArea({ socketRef }) {
 
   useEffect(() => {
     if (selectedContact?._id) {
-      console.log("selectedContact?._id", selectedContact?._id);
       setChatId(selectedContact._id);
       setMessages([]);
       setPage(1);
@@ -53,21 +52,24 @@ function ChatArea({ socketRef }) {
   }, []);
 
   const sendMessage = () => {
-    if (!socketRef.current) return;
     const nearBottom = isNearBottom();
-    socketRef.current.emit(
-      "send-message",
-      {
-        message: messageText,
-        chat_id: chatId,
-        message_type: "text",
+
+    dispatch({
+      type: "socket/emit",
+      payload: {
+        event: "send-message",
+        data: {
+          message: messageText,
+          chat_id: chatId,
+          message_type: "text",
+        },
+        callback: (response) => {
+          setMessageText("");
+          if (!response.success) dispatch(throwError(response.message));
+          if (nearBottom) scrollToBottom();
+        },
       },
-      (response) => {
-        setMessageText("");
-        if (!response.success) dispatch(throwError(response.message));
-        if (nearBottom) scrollToBottom();
-      }
-    );
+    });
   };
 
   const fetchMessages = async () => {
@@ -108,15 +110,34 @@ function ChatArea({ socketRef }) {
   };
 
   useEffect(() => {
-    const socket = socketRef.current;
-    if (!chatId || !socket) return;
-    socket.emit("join-chat", chatId);
-    socket.on("receive-message", handleReceiveMessage);
+    if (!chatId) return;
+
+    dispatch({
+      type: "socket/emit",
+      payload: {
+        event: "join-chat",
+        data: { chatId },
+        callback: (response) => {
+          console.log("join-chat", chatId);
+          if (!response.success) dispatch(throwError(response.message));
+        },
+      },
+    });
+
     return () => {
-      socket.emit("leave-chat", chatId);
-      socket.off("receive-message", handleReceiveMessage);
+      dispatch({
+        type: "socket/emit",
+        payload: {
+          event: "leave-chat",
+          data: { chatId },
+          callback: (response) => {
+            if (!response.success) dispatch(throwError(response.message));
+          },
+        },
+      });
     };
-  }, [chatId, handleReceiveMessage]);
+    // socket.on("receive-message", handleReceiveMessage);
+  }, [chatId]);
 
   useEffect(() => {
     if (chatId) {

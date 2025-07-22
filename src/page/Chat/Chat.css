@@ -59,6 +59,9 @@
 
 .setting-btn {
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s;
 }
 .setting-btn:hover {

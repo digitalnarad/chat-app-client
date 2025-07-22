@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   handelCatch,
   logout,
+  setRequests,
   setSelectedContact,
   throwError,
 } from "../../store/globalSlice";
@@ -11,71 +12,79 @@ import AddNewChat from "./AddNewChat";
 import { use, useEffect, useMemo, useState } from "react";
 import MessageRequest from "./MessageRequest";
 import api from "../../services/api";
+import { Spinner } from "react-bootstrap";
 
-function ChatSidebar({ socketRef }) {
+function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
   const dispatch = useDispatch();
-  const { contacts, selectedContact, authData } = useSelector(
+  const { contacts, selectedContact, requests } = useSelector(
     (state) => state.global
   );
-  const [isAddNewChat, setIsAddNewChat] = useState(false);
-  const [isMessageRequest, setIsMessageRequest] = useState(false);
-  const [requests, setRequests] = useState([]);
 
   const [chats, setChats] = useState([]);
+  const [isLogout, setIsLogout] = useState(false);
+  const [selectedChat, setSelectedChat] = useState(null);
 
   useEffect(() => {
-    setChats(contacts);
-  }, [contacts]);
+    if (selectedContact) {
+      setSelectedChat(selectedContact);
+    }
+  }, [selectedContact]);
+
+  // useEffect(() => {
+  //   setChats(contacts);
+  // }, [contacts]);
 
   const getRequestCount = useMemo(() => {
     return requests.length;
   }, [requests.length]);
 
-  const fetchAllRequest = async () => {
-    try {
-      const res = await api.get("/request/fetch-all-requests");
-      if (res.status === 200) {
-        setRequests(res?.data?.response || []);
-      } else {
-        dispatch(throwError(res.data.message));
-      }
-    } catch (err) {
-      dispatch(handelCatch(err));
-    }
-  };
+  // const leaveChatMemo = useMemo(() => {
+  //   return {
+  //     type: "socket/emit",
+  //     payload: {
+  //       event: "leave-chat",
+  //       data: { chatId: selectedChat?._id },
 
-  useEffect(() => {
-    fetchAllRequest();
-  }, []);
+  //       callback: (response) => {
+  //         if (!response.success) dispatch(throwError(response.message));
+  //       },
+  //     },
+  //   };
+  // }, [selectedChat]);
+
+  const memoizedChats = useMemo(() => {
+    // console.log("Array changed, re-rendering...");
+    return contacts;
+  }, [JSON.stringify(contacts)]);
 
   return (
     <div className="chat-sidebar">
-      {isAddNewChat && (
-        <AddNewChat
-          show={isAddNewChat}
-          onHide={() => setIsAddNewChat(false)}
-          socketRef={socketRef}
-        />
-      )}
-      {isMessageRequest && (
-        <MessageRequest
-          requestList={requests}
-          show={isMessageRequest}
-          onHide={() => setIsMessageRequest(false)}
-          fetchAllRequest={fetchAllRequest}
-        />
-      )}
       <div className="chat-sidebar-header">
         <div className="logo-setting">
           <h1 className="chat-logo">Chats</h1>
           <div className="setting-btn-group">
             <div className="setting-btn">
-              <LogOut
-                size={22}
-                onClick={() => {
-                  dispatch(logout());
-                }}
-              />
+              {!isLogout ? (
+                <LogOut
+                  size={22}
+                  onClick={() => {
+                    setIsLogout(true);
+                    dispatch({
+                      type: "socket/emit",
+                      payload: {
+                        event: "update-my-status",
+                        data: { status: "offline" },
+                        callback: () => {
+                          dispatch(logout());
+                        },
+                      },
+                    });
+                    // setTimeout(() => {}, 2000);
+                  }}
+                />
+              ) : (
+                <Spinner size="sm" style={{ color: "#2f7eff" }} />
+              )}
             </div>
             <div className="setting-btn">
               <Settings size={22} />
@@ -110,9 +119,9 @@ function ChatSidebar({ socketRef }) {
         </div>
       </div>
       <div className="contact-list chat-scroll">
-        {(chats || []).map((contact, index) => {
+        {memoizedChats.map((contact, index) => {
           const { participant } = contact;
-          const selected = selectedContact?._id === contact._id;
+          const selected = selectedChat?._id === contact._id;
           const isYou = !participant?._id;
           return (
             <div

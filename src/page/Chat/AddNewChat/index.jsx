@@ -1,24 +1,33 @@
-import { Button, Modal } from "react-bootstrap";
+import { Button, Modal, Spinner } from "react-bootstrap";
 import "./AddNewChat.css";
 import { Search, Sparkles, UserX, X } from "lucide-react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import api from "../../../services/api";
 import {
   handelCatch,
+  setRequestLoading,
   showSuccess,
   throwError,
 } from "../../../store/globalSlice";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { debounce } from "../../../assets/helper";
 import CrazyLoader from "../../../components/CrazyLoader";
 
 function AddNewChat({ show, onHide, socketRef }) {
   const dispatch = useDispatch();
+  const { loading, authData } = useSelector((state) => state.global);
+  console.log("authData", authData);
 
   const [searchUsers, setSearchUsers] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [isSearchUsers, setIsSearchUsers] = useState(false);
-  const [isLoadRequest, setIsLoadRequests] = useState(false);
+
+  const [isLoadRequests, setIsLoadRequests] = useState(false);
+  const [isChangeRequest, setChangeRequest] = useState("");
+
+  useEffect(() => {
+    setIsLoadRequests(loading.request);
+  }, [loading.request]);
 
   const fetchUsers = async (search_str) => {
     try {
@@ -42,39 +51,42 @@ function AddNewChat({ show, onHide, socketRef }) {
   );
 
   const sentNewRequest = async (receiver_id, message = "") => {
-    setIsLoadRequests(true);
-    try {
-      if (!socketRef.current) return;
-      socketRef.current.emit(
-        "sent-new-request",
-        { receiver_id, message },
-        (response) => {
-          if (!response.success) dispatch(throwError(response.message));
-          fetchUsers(searchText);
-          dispatch(showSuccess(response.message));
-        }
-      );
-    } catch (error) {
-      dispatch(handelCatch(error));
-    } finally {
-      setIsLoadRequests(false);
-    }
+    setChangeRequest(receiver_id);
+    setTimeout(() => {
+      dispatch({
+        type: "socket/emit",
+        payload: {
+          event: "sent-new-request",
+          data: { receiver_id, message },
+          callback: (response) => {
+            if (!response.success) dispatch(throwError(response.message));
+            fetchUsers(searchText);
+            dispatch(showSuccess(response.message));
+            setChangeRequest("");
+          },
+        },
+      });
+    }, 1000);
   };
 
   const cancelRequest = async (receiver_id) => {
-    setIsLoadRequests(true);
-    try {
-      if (!socketRef.current) return;
-      socketRef.current.emit("cancel-request", { receiver_id }, (response) => {
-        if (!response.success) dispatch(throwError(response.message));
-        fetchUsers(searchText);
-        dispatch(showSuccess(response.message));
+    setChangeRequest(receiver_id);
+    setTimeout(() => {
+      dispatch({
+        type: "socket/emit",
+        payload: {
+          event: "cancel-request",
+          data: { receiver_id, sender_id: authData?.id },
+          callback: (response) => {
+            if (!response.success) dispatch(throwError(response.message));
+            fetchUsers(searchText);
+            dispatch(showSuccess(response.message));
+            // dispatch(setRequestLoading(false));
+            setChangeRequest("");
+          },
+        },
       });
-    } catch (error) {
-      dispatch(handelCatch(error));
-    } finally {
-      setIsLoadRequests(false);
-    }
+    }, 1000);
   };
 
   return (
@@ -157,8 +169,12 @@ function AddNewChat({ show, onHide, socketRef }) {
                         }}
                       >
                         {!ele.request_sent ? "Sent Request" : "Cancel Request"}
-                        {isLoadRequest && (
-                          <Spinner animation="grow" size="sm" />
+                        {isChangeRequest === ele._id && (
+                          <Spinner
+                            animation="grow"
+                            size="sm"
+                            style={{ marginLeft: "7px" }}
+                          />
                         )}
                       </Button>
                     </div>

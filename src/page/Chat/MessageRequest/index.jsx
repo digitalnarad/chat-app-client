@@ -1,17 +1,29 @@
-import React, { useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import "./MessageRequest.css";
 import { Button, Modal } from "react-bootstrap";
 import { MailWarning, MessageSquareWarning, Sparkles, X } from "lucide-react";
-import { useDispatch } from "react-redux";
-import { handelCatch, showSuccess } from "../../../store/globalSlice";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  handelCatch,
+  showSuccess,
+  throwError,
+} from "../../../store/globalSlice";
 import api from "../../../services/api";
-function MessageRequest({ show, onHide, requestList, fetchAllRequest }) {
+function MessageRequest({ show, onHide, fetchAllRequest }) {
   const dispatch = useDispatch();
+  const { requests } = useSelector((state) => state.global);
   const [loading, setLoading] = useState(false);
-  const rejectRequest = async (id) => {
+  const [requestList, setRequestList] = useState([]);
+
+  useEffect(() => {
+    setRequestList(requests);
+  }, [requests]);
+
+  const rejectRequest = async (request) => {
+    console.log("request", request);
     try {
       setLoading(true);
-      const res = await api.delete(`/request/reject-requests/${id}`);
+      const res = await api.delete(`/request/reject-requests/${request._id}`);
       if (res.status === 200) {
         dispatch(showSuccess(res.data.message));
         fetchAllRequest();
@@ -24,24 +36,43 @@ function MessageRequest({ show, onHide, requestList, fetchAllRequest }) {
     } finally {
       setLoading(false);
     }
+
+    const { sender_id, receiver_id } = request;
+
+    dispatch({
+      type: "socket/emit",
+      payload: {
+        event: "cancel-request",
+        data: { sender_id, receiver_id },
+
+        callback: (response) => {
+          if (!response.success) dispatch(throwError(response.message));
+          fetchAllRequest();
+        },
+      },
+    });
   };
 
   const acceptRequest = async (id) => {
     try {
-      setLoading(true);
-      const res = await api.put(`/request/accept-requests/${id}`);
-      if (res.status === 200) {
-        dispatch(showSuccess(res.data.message));
-        fetchAllRequest();
-      } else {
-        dispatch(throwError(res.data.message));
-      }
+      dispatch({
+        type: "socket/emit",
+        payload: {
+          event: "accept-request",
+          data: { id },
+          callback: (response) => {
+            if (!response.success) dispatch(throwError(response.message));
+            fetchAllRequest();
+          },
+        },
+      });
     } catch (error) {
       dispatch(handelCatch(error));
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <Modal
       show={show}
@@ -59,7 +90,7 @@ function MessageRequest({ show, onHide, requestList, fetchAllRequest }) {
           </button>
         </div>
         <div className="message-request-text">
-          You have 12 new message request
+          You have {requestList.length} new message request
         </div>
         <div className="message-request-box chat-scroll">
           {requestList.map((ele) => {
@@ -91,7 +122,7 @@ function MessageRequest({ show, onHide, requestList, fetchAllRequest }) {
                     size="sm"
                     className="Reject-btn"
                     disabled={loading}
-                    onClick={() => rejectRequest(ele._id)}
+                    onClick={() => rejectRequest(ele)}
                   >
                     Reject
                   </Button>
