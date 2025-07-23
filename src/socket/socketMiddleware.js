@@ -72,13 +72,9 @@ const socketMiddleware = (store) => (next) => (action) => {
       console.log("update-user-last-message", message);
     });
 
-    socket.on("change-request", (data) => {
-      console.log("change-request", data);
-    });
+    socket.on("remove-request", socketFunc.removeRequest);
 
-    socket.on("request-accepted", (data) => {
-      console.log("request-accepted", data);
-    });
+    socket.on("receive-request", socketFunc.receiveRequest);
 
     socket.on("typing", (data) => {
       console.log("typing", data);

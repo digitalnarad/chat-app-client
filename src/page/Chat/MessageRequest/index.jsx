@@ -17,25 +17,11 @@ function MessageRequest({ show, onHide, fetchAllRequest }) {
 
   useEffect(() => {
     setRequestList(requests);
+    console.log("requests", requests);
   }, [requests]);
 
   const rejectRequest = async (request) => {
     console.log("request", request);
-    try {
-      setLoading(true);
-      const res = await api.delete(`/request/reject-requests/${request._id}`);
-      if (res.status === 200) {
-        dispatch(showSuccess(res.data.message));
-        fetchAllRequest();
-      } else {
-        dispatch(throwError(res.data.message));
-      }
-    } catch (error) {
-      console.log("error", error);
-      dispatch(handelCatch(error));
-    } finally {
-      setLoading(false);
-    }
 
     const { sender_id, receiver_id } = request;
 

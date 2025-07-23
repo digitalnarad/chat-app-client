@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import ChatArea from "./ChatArea";
 import ChatHeader from "./ChatHeader";
 import ChatSidebar from "./ChatSidebar";
@@ -30,7 +30,7 @@ function ChatLayout() {
     selectedContactRef.current = selectedContact;
   }, [selectedContact]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const connectSocket = () => {
       const token = localStorage.getItem("token");
 

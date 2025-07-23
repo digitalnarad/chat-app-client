@@ -1,6 +1,7 @@
-import { setContacts } from "../store/globalSlice";
+import { setContacts, setRequests, showSuccess } from "../store/globalSlice";
 
 export function socketFunctions(store) {
+  const { dispatch } = store;
   const updateUserStatus = (payload) => {
     console.log("payload", payload);
     const contacts = store.getState().global.contacts;
@@ -17,10 +18,23 @@ export function socketFunctions(store) {
       }
       return c;
     });
-    store.dispatch(setContacts(updatedContacts));
+    dispatch(setContacts(updatedContacts));
+  };
+
+  const receiveRequest = (payload) => {
+    const requests = store.getState().global.requests;
+    dispatch(setRequests([...requests, payload.request]));
+    dispatch(showSuccess(payload.message));
+  }; // TODO: implement request
+
+  const removeRequest = (payload) => {
+    const requests = store.getState().global.requests;
+    dispatch(setRequests(requests.filter((r) => r._id !== payload._id)));
   };
 
   return {
     updateUserStatus,
+    receiveRequest,
+    removeRequest,
   };
 }

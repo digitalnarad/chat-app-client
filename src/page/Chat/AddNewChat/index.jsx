@@ -76,7 +76,7 @@ function AddNewChat({ show, onHide, socketRef }) {
         type: "socket/emit",
         payload: {
           event: "cancel-request",
-          data: { receiver_id, sender_id: authData?.id },
+          data: { receiver_id, sender_id: authData?._id },
           callback: (response) => {
             if (!response.success) dispatch(throwError(response.message));
             fetchUsers(searchText);
