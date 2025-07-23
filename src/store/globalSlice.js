@@ -184,6 +184,15 @@ export const verifyToken = (token) => async (dispatch) => {
   }
 };
 
+// export const fetchContacts = () => async (dispatch) => {
+//   try {
+//     const res = await
+//   } catch (error) {
+//     console.log("error", error);
+//     dispatch(handelCatch(error));
+//   }
+// };
+
 export const {
   setAuthData,
   setErrorData,

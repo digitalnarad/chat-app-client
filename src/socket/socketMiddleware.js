@@ -85,10 +85,9 @@ const socketMiddleware = (store) => (next) => (action) => {
       console.log("Read receipt received:", data);
     });
 
-    socket.on("new-chat", (data) => {
-      // You might want to add a readReceiptUpdated action to your slice
-      console.log("new-chat:", data);
-    });
+    socket.on("accept-request", socketFunc.acceptRequest);
+
+    socket.on("new-chat", socketFunc.newChat);
 
     store.socket = socket;
   }

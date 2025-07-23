@@ -17,7 +17,7 @@ function ChatHeader() {
   }, [
     selectedContact?._id, // Only watch ID changes
     contacts?.length, // Watch array length changes
-    JSON.stringify(contacts?.find((c) => c._id === selectedContact?._id)), // Only stringify the found contact
+    JSON.stringify(contacts?.find((c) => c._id === selectedContact?._id)),
   ]);
 
   const {

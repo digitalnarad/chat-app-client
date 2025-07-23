@@ -1,26 +1,17 @@
 import { LogOut, Search, Settings } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  handelCatch,
-  logout,
-  setRequests,
-  setSelectedContact,
-  throwError,
-} from "../../store/globalSlice";
+import { logout, setSelectedContact } from "../../store/globalSlice";
 import { parseTimeAndDate } from "../../assets/helper";
-import AddNewChat from "./AddNewChat";
-import { use, useEffect, useMemo, useState } from "react";
-import MessageRequest from "./MessageRequest";
-import api from "../../services/api";
+import { useEffect, useMemo, useState } from "react";
 import { Spinner } from "react-bootstrap";
+import CrazyLoader from "../../components/CrazyLoader";
 
 function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
   const dispatch = useDispatch();
-  const { contacts, selectedContact, requests } = useSelector(
+  const { contacts, selectedContact, requests, loading } = useSelector(
     (state) => state.global
   );
 
-  const [chats, setChats] = useState([]);
   const [isLogout, setIsLogout] = useState(false);
   const [selectedChat, setSelectedChat] = useState(null);
 
@@ -30,30 +21,11 @@ function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
     }
   }, [selectedContact]);
 
-  // useEffect(() => {
-  //   setChats(contacts);
-  // }, [contacts]);
-
   const getRequestCount = useMemo(() => {
     return requests.length;
   }, [requests.length]);
 
-  // const leaveChatMemo = useMemo(() => {
-  //   return {
-  //     type: "socket/emit",
-  //     payload: {
-  //       event: "leave-chat",
-  //       data: { chatId: selectedChat?._id },
-
-  //       callback: (response) => {
-  //         if (!response.success) dispatch(throwError(response.message));
-  //       },
-  //     },
-  //   };
-  // }, [selectedChat]);
-
   const memoizedChats = useMemo(() => {
-    // console.log("Array changed, re-rendering...");
     return contacts;
   }, [JSON.stringify(contacts)]);
 
@@ -119,49 +91,62 @@ function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
         </div>
       </div>
       <div className="contact-list chat-scroll">
-        {memoizedChats.map((contact, index) => {
-          const { participant } = contact;
-          const selected = selectedChat?._id === contact._id;
-          const isYou = !participant?._id;
-          return (
-            <div
-              key={contact._id}
-              className={`contact-item ${selected ? "selected" : ""}`}
-              onClick={() => dispatch(setSelectedContact(contact))}
-            >
-              <div className="contact-avatar">
-                {participant?.first_name?.[0] ||
-                  "" + participant?.last_name?.[0] ||
-                  ""}
-              </div>
+        {loading.contacts ? (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <CrazyLoader label="Sending into the void..." />
+          </div>
+        ) : (
+          memoizedChats.map((contact) => {
+            console.log("contact", contact);
+            const { participant } = contact;
+            const selected = selectedChat?._id === contact._id;
+            return (
+              <div
+                key={contact._id}
+                className={`contact-item ${selected ? "selected" : ""}`}
+                onClick={() => dispatch(setSelectedContact(contact))}
+              >
+                <div className="contact-avatar">
+                  {(participant?.first_name?.[0] || "") +
+                    (participant?.last_name?.[0] || "")}
+                </div>
 
-              <div className="contact-info">
-                <div className="contact-header">
-                  <div className="contact-name">
-                    {participant?.first_name ||
-                      "" + " " + participant?.last_name ||
-                      ""}
+                <div className="contact-info">
+                  <div className="contact-header">
+                    <div className="contact-name">
+                      {(participant?.first_name || "") +
+                        " " +
+                        (participant?.last_name || "")}
+                    </div>
+                    <span className="contact-time">
+                      {parseTimeAndDate(contact?.updatedAt)}
+                    </span>
                   </div>
-                  <span className="contact-time">
-                    {parseTimeAndDate(contact?.updatedAt)}
-                  </span>
-                </div>
-                <div className="contact-message-row">
-                  <span className="contact-message">
-                    {contact?.lastMessage?.message || "Join this chat...!"}
-                  </span>
-                  <span
-                    className={`contact-unread ${
-                      contact?.unread ? "" : "contact-read"
-                    }`}
-                  >
-                    {1}
-                  </span>
+                  <div className="contact-message-row">
+                    <span className="contact-message">
+                      {contact?.lastMessage?.message || "Join this chat...!"}
+                    </span>
+                    <span
+                      className={`contact-unread ${
+                        contact?.unread ? "" : "contact-read"
+                      }`}
+                    >
+                      {1}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );

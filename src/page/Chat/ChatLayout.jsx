@@ -1,9 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ChatArea from "./ChatArea";
 import ChatHeader from "./ChatHeader";
 import ChatSidebar from "./ChatSidebar";
 import "./Chat.css";
-import { createSocket } from "../../services/socket";
 import api from "../../services/api";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -18,7 +17,7 @@ import MessageRequest from "./MessageRequest";
 
 function ChatLayout() {
   const dispatch = useDispatch();
-  const { selectedContact, socketConnected, requests } = useSelector(
+  const { selectedContact, socketConnected } = useSelector(
     (state) => state.global
   );
   const [isAddNewChat, setIsAddNewChat] = useState(false);
@@ -30,7 +29,7 @@ function ChatLayout() {
     selectedContactRef.current = selectedContact;
   }, [selectedContact]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const connectSocket = () => {
       const token = localStorage.getItem("token");
 
@@ -71,11 +70,7 @@ function ChatLayout() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden" && socketConnected) {
         handleUserOffline();
-      } else if (
-        document.visibilityState === "visible" &&
-        !socketConnected &&
-        isPageLoaded
-      ) {
+      } else if (document.visibilityState === "visible" && !socketConnected) {
         connectSocket(); // Reconnect only if page was loaded
       }
     };

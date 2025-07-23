@@ -1,4 +1,11 @@
-import { setContacts, setRequests, showSuccess } from "../store/globalSlice";
+import api from "../services/api";
+import {
+  setContacts,
+  setContactsLoading,
+  setRequests,
+  showSuccess,
+  throwError,
+} from "../store/globalSlice";
 
 export function socketFunctions(store) {
   const { dispatch } = store;
@@ -32,9 +39,35 @@ export function socketFunctions(store) {
     dispatch(setRequests(requests.filter((r) => r._id !== payload._id)));
   };
 
+  const newChat = async (payload) => {
+    console.log("newChat-payload", payload);
+    dispatch(setContactsLoading(true));
+    try {
+      const res = await api.get("/chat/fetch-all-chats");
+      if (res.status === 200) {
+        const chats = res?.data?.response || [];
+        dispatch(setContacts(chats));
+      } else {
+        dispatch(throwError(res.data.message || "Failed to fetch contacts"));
+      }
+    } catch (error) {
+      console.log("error", error);
+    } finally {
+      dispatch(setContactsLoading(false));
+    }
+  };
+
+  const acceptRequest = (payload) => {
+    console.log("acceptRequest-payload", payload);
+    const requests = store.getState().global.requests;
+    dispatch(requests.filter((c) => c._id !== payload._id));
+  };
+
   return {
     updateUserStatus,
     receiveRequest,
     removeRequest,
+    newChat,
+    acceptRequest,
   };
 }
