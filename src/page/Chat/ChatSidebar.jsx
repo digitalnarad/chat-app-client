@@ -105,7 +105,6 @@ function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
           </div>
         ) : (
           memoizedChats.map((contact) => {
-            console.log("contact", contact);
             const { participant } = contact;
             const selected = selectedChat?._id === contact._id;
             return (
@@ -117,6 +116,9 @@ function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
                 <div className="contact-avatar">
                   {(participant?.first_name?.[0] || "") +
                     (participant?.last_name?.[0] || "")}
+                  {participant.active_status.status === "online" && (
+                    <div className="contact-status"></div>
+                  )}
                 </div>
 
                 <div className="contact-info">
@@ -132,14 +134,16 @@ function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
                   </div>
                   <div className="contact-message-row">
                     <span className="contact-message">
-                      {contact?.lastMessage?.message || "Join this chat...!"}
+                      {contact?.lastMessage || "Join this chat...!"}
                     </span>
                     <span
                       className={`contact-unread ${
-                        contact?.unread ? "" : "contact-read"
+                        contact?.unread_count > 0 ? "" : "contact-read"
                       }`}
                     >
-                      {1}
+                      {contact?.unread_count > 99
+                        ? "99+"
+                        : contact?.unread_count}
                     </span>
                   </div>
                 </div>

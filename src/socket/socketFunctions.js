@@ -1,7 +1,9 @@
 import api from "../services/api";
 import {
+  fetchContacts,
   setContacts,
   setContactsLoading,
+  setLiveMessages,
   setRequests,
   showSuccess,
   throwError,
@@ -10,11 +12,9 @@ import {
 export function socketFunctions(store) {
   const { dispatch } = store;
   const updateUserStatus = (payload) => {
-    console.log("payload", payload);
     const contacts = store.getState().global.contacts;
     const updatedContacts = contacts.map((c) => {
       if (c.participant._id === payload.userId) {
-        console.log(c.participant._id, c.participant.active_status.status);
         return {
           ...c,
           participant: {
@@ -40,27 +40,53 @@ export function socketFunctions(store) {
   };
 
   const newChat = async (payload) => {
-    console.log("newChat-payload", payload);
-    dispatch(setContactsLoading(true));
-    try {
-      const res = await api.get("/chat/fetch-all-chats");
-      if (res.status === 200) {
-        const chats = res?.data?.response || [];
-        dispatch(setContacts(chats));
-      } else {
-        dispatch(throwError(res.data.message || "Failed to fetch contacts"));
-      }
-    } catch (error) {
-      console.log("error", error);
-    } finally {
-      dispatch(setContactsLoading(false));
-    }
+    dispatch(fetchContacts());
   };
 
   const acceptRequest = (payload) => {
     console.log("acceptRequest-payload", payload);
     const requests = store.getState().global.requests;
-    dispatch(requests.filter((c) => c._id !== payload._id));
+    dispatch(setRequests(requests.filter((c) => c._id !== payload)));
+  };
+
+  const receiveMessage = (payload) => {
+    dispatch(setLiveMessages({ ...payload }));
+  };
+
+  const updateChatRecipients = (payload) => {
+    const contacts = store.getState().global.contacts;
+    const selectedContact = store.getState().global.selectedContact;
+
+    const filteredContacts = contacts.filter((c) => c._id !== payload._id);
+    let updatedReadRecipients = false;
+    if (selectedContact?._id === payload._id) {
+      dispatch({
+        type: "socket/emit",
+        payload: {
+          event: "mark-as-read",
+          data: {
+            chat_id: payload._id,
+          },
+          callback: (response) => {
+            if (!response.success) {
+              dispatch(throwError(response.message));
+              return;
+            }
+            updatedReadRecipients = true;
+          },
+        },
+      });
+    }
+    dispatch(
+      setContacts([
+        {
+          ...payload,
+          unread_count:
+            selectedContact?._id === payload._id ? 0 : payload.unread_count,
+        },
+        ...filteredContacts,
+      ])
+    );
   };
 
   return {
@@ -69,5 +95,7 @@ export function socketFunctions(store) {
     removeRequest,
     newChat,
     acceptRequest,
+    receiveMessage,
+    updateChatRecipients,
   };
 }

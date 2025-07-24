@@ -16,7 +16,6 @@ import CrazyLoader from "../../../components/CrazyLoader";
 function AddNewChat({ show, onHide, socketRef }) {
   const dispatch = useDispatch();
   const { loading, authData } = useSelector((state) => state.global);
-  console.log("authData", authData);
 
   const [searchUsers, setSearchUsers] = useState([]);
   const [searchText, setSearchText] = useState("");

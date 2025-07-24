@@ -29,7 +29,10 @@ const socketMiddleware = (store) => (next) => (action) => {
 
     if (socket) socket.disconnect();
 
-    socket = io("http://localhost:8000", {
+    // const baseURL = "http://localhost:8000";
+    const baseURL = "https://chat-app-server-54ar.onrender.com";
+
+    socket = io(baseURL, {
       auth: { token },
     });
 
@@ -64,17 +67,21 @@ const socketMiddleware = (store) => (next) => (action) => {
     // ✅ Set up all your socket listeners using the action creators
     socket.on("update-user-status", socketFunc.updateUserStatus);
 
-    socket.on("receive-message", (message) => {
-      console.log("receive-message", message);
-    });
+    // socket.on("receive-message", (message) => {
+    //   console.log("receive-message", message);
+    // });
 
-    socket.on("update-user-last-message", (message) => {
-      console.log("update-user-last-message", message);
-    });
+    // socket.on("update-user-last-message", (message) => {
+    //   console.log("update-user-last-message", message);
+    // });
 
     socket.on("remove-request", socketFunc.removeRequest);
 
     socket.on("receive-request", socketFunc.receiveRequest);
+
+    socket.on("receive-message", socketFunc.receiveMessage);
+
+    socket.on("receive-updated-message-chat", socketFunc.updateChatRecipients);
 
     socket.on("typing", (data) => {
       console.log("typing", data);

@@ -20,6 +20,7 @@ const initialState = {
   onlineUsers: [],
   typingUsers: [],
   requests: [],
+  liveMessages: null,
 
   // Socket state - ADD THIS
   socketConnected: false,
@@ -68,6 +69,10 @@ const globalSlice = createSlice({
 
     setMessages(state, action) {
       state.messages = JSON.parse(JSON.stringify(action.payload));
+    },
+
+    setLiveMessages(state, action) {
+      state.liveMessages = action.payload;
     },
 
     addOnlineUsers(state, action) {
@@ -167,31 +172,54 @@ export const logout = () => async (dispatch) => {
 
 export const verifyToken = (token) => async (dispatch) => {
   try {
+    if (!token) return;
     const res = await api.get("/user/token-verification");
-    console.log("res", res);
     if (res.status === 200) {
       dispatch(setAuthToken(token));
       dispatch(setAuthData(res?.data?.response));
       return;
     }
     dispatch(throwError(res.data.message));
-    dispatch(setAuthToken(null));
-    dispatch(setAuthData(null));
+    dispatch(logout(null));
   } catch (error) {
     dispatch(handelCatch(error));
-    dispatch(setAuthToken(null));
-    dispatch(setAuthData(null));
+    dispatch(logout(null));
   }
 };
 
-// export const fetchContacts = () => async (dispatch) => {
-//   try {
-//     const res = await
-//   } catch (error) {
-//     console.log("error", error);
-//     dispatch(handelCatch(error));
-//   }
-// };
+export const fetchContacts = () => async (dispatch) => {
+  dispatch(setContactsLoading(true));
+  try {
+    const res = await api.get("/chat/fetch-all-chats");
+    if (res.status === 200) {
+      const chats = res?.data?.response || [];
+      dispatch(setContacts(chats));
+      dispatch(setSelectedContact(chats[0] || null));
+    } else {
+      dispatch(throwError(res.data.message || "Failed to fetch contacts"));
+    }
+  } catch (error) {
+    dispatch(handelCatch(error));
+  } finally {
+    dispatch(setContactsLoading(false));
+  }
+};
+
+export const fetchRequests = () => async (dispatch) => {
+  dispatch(setRequestLoading(true));
+  try {
+    const res = await api.get("/request/fetch-all-requests");
+    if (res.status === 200) {
+      dispatch(setRequests(res?.data?.response || []));
+    } else {
+      dispatch(throwError(res.data.message));
+    }
+  } catch (err) {
+    dispatch(handelCatch(err));
+  } finally {
+    dispatch(setRequestLoading(false));
+  }
+};
 
 export const {
   setAuthData,
@@ -207,9 +235,11 @@ export const {
   removeTypingUsers,
   setRequests,
   setContactsLoading,
+  setMessages,
   setMessagesLoading,
   setSendingMessageLoading,
   setRequestLoading,
+  setLiveMessages,
 } = globalSlice.actions;
 
 export default globalSlice.reducer;

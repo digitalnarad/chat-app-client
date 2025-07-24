@@ -4,20 +4,26 @@ import { useDispatch, useSelector } from "react-redux";
 import { useCallback, useEffect, useRef, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import api from "../../services/api";
-import { handelCatch, throwError } from "../../store/globalSlice";
+import {
+  handelCatch,
+  setContacts,
+  setLiveMessages,
+  throwError,
+} from "../../store/globalSlice";
 import { Spinner } from "react-bootstrap";
 import CrazyLoader from "../../components/CrazyLoader";
 
 function ChatArea({}) {
   const dispatch = useDispatch();
-  const { selectedContact } = useSelector((state) => state.global);
+  const { selectedContact, liveMessages, contacts, authData } = useSelector(
+    (state) => state.global
+  );
   const [chatId, setChatId] = useState("");
   const [messageText, setMessageText] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [messagesList, setMessagesList] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [lastMessageTime, setLastMessageTime] = useState(null);
 
   const containerRef = useRef(null);
   const scrollBottomRef = useRef(null);
@@ -25,10 +31,9 @@ function ChatArea({}) {
   useEffect(() => {
     if (selectedContact?._id) {
       setChatId(selectedContact._id);
-      setMessages([]);
+      setMessagesList([]);
       setPage(1);
       setHasMore(true);
-      setLastMessageTime(null);
     }
   }, [selectedContact?._id]);
 
@@ -46,10 +51,16 @@ function ChatArea({}) {
     );
   };
 
-  const handleReceiveMessage = useCallback((message) => {
-    setMessages((prev) => [...prev, message]);
-    if (isNearBottom()) scrollToBottom();
-  }, []);
+  useEffect(() => {
+    if (
+      liveMessages &&
+      liveMessages._id !== messagesList[messagesList.length - 1]?._id
+    ) {
+      setMessagesList((prev) => [...prev, liveMessages]);
+      if (isNearBottom()) scrollToBottom();
+      dispatch(setLiveMessages(null));
+    }
+  }, [JSON.stringify(liveMessages)]);
 
   const sendMessage = () => {
     const nearBottom = isNearBottom();
@@ -62,11 +73,21 @@ function ChatArea({}) {
           message: messageText,
           chat_id: chatId,
           message_type: "text",
+          receiver_id: selectedContact?.participant?._id,
         },
         callback: (response) => {
           setMessageText("");
           if (!response.success) dispatch(throwError(response.message));
           if (nearBottom) scrollToBottom();
+          const filteredContact = contacts.filter(
+            (c) => c._id !== selectedContact._id
+          );
+          dispatch(
+            setContacts([
+              { ...selectedContact, lastMessage: response?.payload?.message },
+              ...filteredContact,
+            ])
+          );
         },
       },
     });
@@ -80,33 +101,73 @@ function ChatArea({}) {
 
     try {
       const res = await api.get(
-        `/message/fetch-chats-messages/${chatId}?page=${page}&limit=20${
-          lastMessageTime && "&last_message_time=" + lastMessageTime
-        }`
+        `/message/fetch-chats-messages/${chatId}?page=${page}&limit=20`
       );
 
-      const fetched = res?.data?.response || [];
+      if (res.status === 200) {
+        const fetched = res?.data?.response || [];
 
-      if (fetched.length === 0) {
-        setHasMore(false);
-      } else {
-        setMessages((prev) => [...fetched, ...prev]);
+        const firstMessage = fetched?.[0];
+
+        if (
+          messagesList.length === 0 &&
+          firstMessage.sender !== authData?._id &&
+          firstMessage?.read_by.filter((r) => r === authData?._id).length ===
+            0 &&
+          chatId
+        ) {
+          sendReadMessage(firstMessage);
+        }
+
+        setMessagesList((prev) => [...fetched.reverse(), ...prev]);
         setPage((prev) => prev + 1);
-
-        const oldestMessage = fetched[fetched.length - 1];
-        setLastMessageTime(oldestMessage.createdAt);
 
         setTimeout(() => {
           const newScrollHeight = container?.scrollHeight || 0;
           const delta = newScrollHeight - previousScrollHeight;
           container.scrollTop += delta - 40;
         }, 0);
+
+        if (fetched.length < 20) {
+          setHasMore(false);
+        }
       }
     } catch (err) {
       dispatch(handelCatch(err));
     } finally {
       setLoading(false);
     }
+  };
+
+  const sendReadMessage = (message) => {
+    dispatch({
+      type: "socket/emit",
+      payload: {
+        event: "mark-as-read",
+        data: {
+          chat_id: message?.chat_id,
+        },
+        callback: (response) => {
+          if (!response.success) {
+            dispatch(throwError(response.message));
+            return;
+          }
+          dispatch(
+            setContacts(
+              contacts.map((c) => {
+                if (c._id === selectedContact._id) {
+                  return {
+                    ...c,
+                    unread_count: 0,
+                  };
+                }
+                return c;
+              })
+            )
+          );
+        },
+      },
+    });
   };
 
   useEffect(() => {
@@ -118,7 +179,6 @@ function ChatArea({}) {
         event: "join-chat",
         data: { chatId },
         callback: (response) => {
-          console.log("join-chat", chatId);
           if (!response.success) dispatch(throwError(response.message));
         },
       },
@@ -160,7 +220,7 @@ function ChatArea({}) {
         }}
       >
         <InfiniteScroll
-          dataLength={messages.length}
+          dataLength={messagesList.length}
           next={(e) => {
             setLoading(true);
             setTimeout(() => {
@@ -189,7 +249,7 @@ function ChatArea({}) {
             </div>
           )}
 
-          {!hasMore && messages.length > 0 && (
+          {!hasMore && messagesList.length > 0 && (
             <div
               className="top-end"
               style={{ textAlign: "center", color: "gray", margin: "8px" }}
@@ -197,13 +257,14 @@ function ChatArea({}) {
               You've reached the beginning.
             </div>
           )}
-          {messages.map((message, index) => {
+          {messagesList.map((message, index) => {
             return (
               <MessageBubble
-                key={message._id}
+                key={message._id + message?.createdAt}
                 text={message.message}
                 sender={message?.sender}
                 time={message?.createdAt}
+                type={message?.message_type}
               />
             );
           })}

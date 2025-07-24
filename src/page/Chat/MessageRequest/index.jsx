@@ -17,12 +17,9 @@ function MessageRequest({ show, onHide, fetchAllRequest }) {
 
   useEffect(() => {
     setRequestList(requests);
-    console.log("requests", requests);
   }, [requests]);
 
   const rejectRequest = async (request) => {
-    console.log("request", request);
-
     const { sender_id, receiver_id } = request;
 
     dispatch({

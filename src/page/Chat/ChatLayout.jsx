@@ -6,6 +6,8 @@ import "./Chat.css";
 import api from "../../services/api";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  fetchContacts,
+  fetchRequests,
   handelCatch,
   setContacts,
   setRequests,
@@ -40,7 +42,6 @@ function ChatLayout() {
 
       // Only connect if page is loaded and socket is not connected
       if (token && !socketConnected) {
-        console.log("🔌 Connecting socket after page load");
         dispatch({ type: "socket/connect" });
         dispatch({
           type: "socket/emit",
@@ -48,7 +49,6 @@ function ChatLayout() {
             event: "update-my-status",
             data: { status: "online" },
             callback: () => {
-              console.log("✅ Status set to online after page load");
               if (selectedContactRef?.current?._id) {
                 dispatch({
                   type: "socket/emit",
@@ -137,38 +137,9 @@ function ChatLayout() {
     });
   };
 
-  const fetchAllContacts = async () => {
-    try {
-      const res = await api.get("/chat/fetch-all-chats");
-      if (res.status === 200) {
-        const chats = res?.data?.response || [];
-
-        dispatch(setContacts(chats));
-        dispatch(setSelectedContact(chats[0] || null));
-      } else {
-        dispatch(throwError(res.data.message || "Failed to fetch contacts"));
-      }
-    } catch (error) {
-      dispatch(handelCatch(error.message));
-    }
-  };
-
-  const fetchAllRequest = async () => {
-    try {
-      const res = await api.get("/request/fetch-all-requests");
-      if (res.status === 200) {
-        dispatch(setRequests(res?.data?.response || []));
-      } else {
-        dispatch(throwError(res.data.message));
-      }
-    } catch (err) {
-      dispatch(handelCatch(err));
-    }
-  };
-
   useEffect(() => {
-    fetchAllContacts();
-    fetchAllRequest();
+    dispatch(fetchContacts());
+    dispatch(fetchRequests());
   }, []);
 
   return (
@@ -180,7 +151,9 @@ function ChatLayout() {
         <MessageRequest
           show={isMessageRequest}
           onHide={() => setIsMessageRequest(false)}
-          fetchAllRequest={fetchAllRequest}
+          fetchAllRequest={() => {
+            dispatch(fetchRequests());
+          }}
         />
       )}
       <div className="chat-layout">
