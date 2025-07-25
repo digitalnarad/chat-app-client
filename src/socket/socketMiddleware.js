@@ -1,19 +1,11 @@
-// store/middleware/socketMiddleware.js
 import { io } from "socket.io-client";
 import {
-  //   messageReceived,
-  //   userStatusUpdated,
-  //   typingStatusChanged,
-  //   requestChanged,
-  //   updateUserLastMessage,
-  socketConnected,
-  socketDisconnected,
   setAuthToken,
   setAuthData,
+  setSocketConnected,
 } from "../store/globalSlice";
 import { socketFunctions } from "./socketFunctions";
 
-// ✅ Declare socket at module level
 let socket = null;
 
 const socketMiddleware = (store) => (next) => (action) => {
@@ -23,7 +15,7 @@ const socketMiddleware = (store) => (next) => (action) => {
     // ✅ Check if token exists before connecting
     if (!token) {
       console.log("❌ No token available, socket connection skipped");
-      store.dispatch(socketConnected(false));
+      store.dispatch(setSocketConnected(false));
       return next(action);
     }
 
@@ -39,13 +31,13 @@ const socketMiddleware = (store) => (next) => (action) => {
     // Handle connection success
     socket.on("connect", () => {
       console.log("✅ Socket connected successfully");
-      store.dispatch(socketConnected(true));
+      store.dispatch(setSocketConnected(true));
     });
 
     // Handle connection error (invalid token, etc.)
     socket.on("connect_error", (error) => {
       console.log("❌ Socket connection failed:", error.message);
-      store.dispatch(socketDisconnected());
+      store.dispatch(setSocketConnected(false));
 
       // If unauthorized, clear auth data
       if (
@@ -59,21 +51,13 @@ const socketMiddleware = (store) => (next) => (action) => {
 
     socket.on("disconnect", () => {
       console.log("🔌 Socket disconnected");
-      store.dispatch(socketDisconnected());
+      store.dispatch(setSocketConnected(false));
     });
 
     const socketFunc = socketFunctions(store);
 
     // ✅ Set up all your socket listeners using the action creators
     socket.on("update-user-status", socketFunc.updateUserStatus);
-
-    // socket.on("receive-message", (message) => {
-    //   console.log("receive-message", message);
-    // });
-
-    // socket.on("update-user-last-message", (message) => {
-    //   console.log("update-user-last-message", message);
-    // });
 
     socket.on("remove-request", socketFunc.removeRequest);
 
@@ -112,7 +96,7 @@ const socketMiddleware = (store) => (next) => (action) => {
       // Token was cleared, disconnect socket
       socket.disconnect();
       socket = null;
-      store.dispatch(socketDisconnected());
+      store.dispatch(setSocketConnected(false));
     }
   }
 
@@ -130,9 +114,7 @@ const socketMiddleware = (store) => (next) => (action) => {
 
   if (action.type === "socket/emit") {
     const { event, data, callback } = action.payload;
-    if (event === "leave-chat") {
-      console.log("event", event);
-    }
+    console.log("event", event);
 
     if (!socket) {
       console.log("❌ Socket not connected, cannot emit event:", event);
@@ -152,7 +134,7 @@ const socketMiddleware = (store) => (next) => (action) => {
     if (socket) {
       socket.disconnect();
       socket = null;
-      store.dispatch(socketDisconnected());
+      store.dispatch(setSocketConnected(false));
     }
   }
 

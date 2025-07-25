@@ -47,16 +47,8 @@ const globalSlice = createSlice({
       state.authToken = action.payload;
     },
 
-    socketConnected(state, action) {
-      state.socketConnected =
-        action.payload !== undefined ? action.payload : true;
-    },
-
-    // chats related actions
-    socketDisconnected(state) {
-      state.socketConnected = false;
-      state.onlineUsers = {};
-      state.typingUsers = {};
+    setSocketConnected(state, action) {
+      state.socketConnected = action.payload;
     },
 
     setSelectedContact(state, action) {
@@ -227,8 +219,7 @@ export const {
   setAuthToken,
   setContacts,
   setSelectedContact,
-  socketConnected,
-  socketDisconnected,
+  setSocketConnected,
   addOnlineUsers,
   removeOnlineUsers,
   addTypingUsers,

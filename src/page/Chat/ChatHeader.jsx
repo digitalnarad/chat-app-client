@@ -11,7 +11,6 @@ function ChatHeader() {
 
     const chat =
       contacts.find((contact) => contact._id === selectedContact._id) || {};
-    console.log("chat", chat);
 
     return chat;
   }, [

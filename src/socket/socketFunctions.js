@@ -44,7 +44,6 @@ export function socketFunctions(store) {
   };
 
   const acceptRequest = (payload) => {
-    console.log("acceptRequest-payload", payload);
     const requests = store.getState().global.requests;
     dispatch(setRequests(requests.filter((c) => c._id !== payload)));
   };
@@ -70,13 +69,23 @@ export function socketFunctions(store) {
           callback: (response) => {
             if (!response.success) {
               dispatch(throwError(response.message));
-              return;
             }
             updatedReadRecipients = true;
           },
         },
       });
     }
+    contacts.map((c) => {
+      if (c._id === payload._id) {
+        return {
+          ...c,
+          lastMessage: payload.lastMessage,
+          unread_count:
+            selectedContact?._id === payload._id ? 0 : payload.unread_count,
+        };
+      }
+      return c;
+    });
     dispatch(
       setContacts([
         {

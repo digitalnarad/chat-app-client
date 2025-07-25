@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ChatArea from "./ChatArea";
 import ChatHeader from "./ChatHeader";
 import ChatSidebar from "./ChatSidebar";
@@ -26,77 +26,91 @@ function ChatLayout() {
   const [isMessageRequest, setIsMessageRequest] = useState(false);
 
   const selectedContactRef = useRef(null);
+  const heartbeatIntervalRef = useRef(null);
+  const lastSeenTimestampRef = useRef(Date.now());
+  const isReconnectingRef = useRef(false);
 
   useEffect(() => {
     selectedContactRef.current = selectedContact;
   }, [selectedContact]);
 
   useEffect(() => {
-    const connectSocket = () => {
-      const token = localStorage.getItem("token");
+    if (socketConnected) {
+      startHeartbeat();
+    } else {
+      stopHeartbeat();
+    }
+  }, [socketConnected]);
 
-      if (!token) {
-        console.warn("No token found");
-        return;
-      }
+  // Heartbeat mechanism to detect disconnections
+  const startHeartbeat = useCallback(() => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+    }
 
-      // Only connect if page is loaded and socket is not connected
-      if (token && !socketConnected) {
-        dispatch({ type: "socket/connect" });
-        dispatch({
-          type: "socket/emit",
-          payload: {
-            event: "update-my-status",
-            data: { status: "online" },
-            callback: () => {
-              if (selectedContactRef?.current?._id) {
-                dispatch({
-                  type: "socket/emit",
-                  payload: {
-                    event: "join-chat",
-                    data: { chatId: selectedContactRef?.current?._id },
-                    callback: () => {},
-                  },
-                });
-              }
-            },
+    heartbeatIntervalRef.current = setInterval(() => {
+      lastSeenTimestampRef.current = Date.now();
+      dispatch({
+        type: "socket/emit",
+        payload: {
+          event: "heartbeat",
+          data: { timestamp: lastSeenTimestampRef.current },
+          callback: () => {
+            // Heartbeat acknowledged
           },
-        });
-      }
-    };
+        },
+      });
+    }, 30000); // Send heartbeat every 30 seconds
+  }, [socketConnected]);
 
-    connectSocket();
+  const stopHeartbeat = () => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+  };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden" && socketConnected) {
-        handleUserOffline();
-      } else if (document.visibilityState === "visible" && !socketConnected) {
-        connectSocket(); // Reconnect only if page was loaded
-      }
-    };
-
-    const handleBeforeUnload = () => {
-      if (socketConnected) {
-        handleUserOffline();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("offline", handleUserOffline);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("offline", handleUserOffline);
-    };
-  }, [socketConnected]); // Add isPageLoaded to dependencies
-
-  const handleUserOffline = () => {
+  // Enhanced offline handling with immediate status update
+  const handleUserOffline = async (isImmediate = false) => {
     if (!socketConnected) return;
 
     const chatId = selectedContactRef?.current?._id;
 
+    // For immediate disconnections, use synchronous approach
+    if (isImmediate) {
+      // Use sendBeacon for reliable delivery during page unload
+      const offlineData = {
+        event: "update-my-status-immediate",
+        data: {
+          status: "offline",
+          chatId,
+          timestamp: Date.now(),
+          reason: "immediate_disconnect",
+        },
+      };
+
+      if (navigator.sendBeacon) {
+        const blob = new Blob([JSON.stringify(offlineData)], {
+          type: "application/json",
+        });
+        navigator.sendBeacon("/api/user-offline", blob);
+      }
+
+      // Also try socket emission with minimal callback
+      dispatch({
+        type: "socket/emit",
+        payload: {
+          event: "update-my-status",
+          data: { status: "offline" },
+          callback: () => {
+            dispatch({ type: "socket/disconnect" });
+          },
+        },
+      });
+      return;
+    }
+
+    // Regular offline handling (existing logic)
     if (!chatId) {
       dispatch({
         type: "socket/emit",
@@ -129,6 +143,7 @@ function ChatLayout() {
               data: { status: "offline" },
               callback: () => {
                 dispatch({ type: "socket/disconnect" });
+                stopHeartbeat();
               },
             },
           });
@@ -136,6 +151,125 @@ function ChatLayout() {
       },
     });
   };
+
+  const connectSocket = () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      console.warn("No token found");
+      return;
+    }
+
+    // Only connect if page is loaded and socket is not connected
+    if (token && !socketConnected) {
+      dispatch({ type: "socket/connect" });
+      dispatch({
+        type: "socket/emit",
+        payload: {
+          event: "update-my-status",
+          data: { status: "online" },
+          callback: () => {
+            startHeartbeat(); // Start heartbeat when connected
+
+            if (selectedContactRef?.current?._id) {
+              dispatch({
+                type: "socket/emit",
+                payload: {
+                  event: "join-chat",
+                  data: { chatId: selectedContactRef?.current?._id },
+                  callback: () => {},
+                },
+              });
+            }
+          },
+        },
+      });
+    }
+  };
+
+  useEffect(() => {
+    connectSocket();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden" && socketConnected) {
+        handleUserOffline();
+      } else if (document.visibilityState === "visible" && !socketConnected) {
+        connectSocket();
+      }
+    };
+
+    // Enhanced beforeunload handler
+    const handleBeforeUnload = (event) => {
+      if (socketConnected) {
+        // Use immediate handling for abrupt disconnections
+        handleUserOffline(true);
+
+        // Optional: Show confirmation dialog for user-initiated closes
+        // event.preventDefault();
+        // event.returnValue = '';
+      }
+    };
+
+    // Page hide event - more reliable than beforeunload
+    const handlePageHide = () => {
+      if (socketConnected) {
+        handleUserOffline(true);
+      }
+    };
+
+    // Network status handlers
+    const handleOnline = () => {
+      if (!socketConnected) {
+        connectSocket();
+      }
+    };
+
+    const handleOffline = () => {
+      if (socketConnected) {
+        handleUserOffline();
+      }
+    };
+
+    // Enhanced event listeners
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handlePageHide); // More reliable than beforeunload
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    // Detect browser/tab close via focus/blur
+    let isTabActive = true;
+    const handleFocus = () => {
+      isTabActive = true;
+      if (!socketConnected) {
+        connectSocket();
+      }
+    };
+
+    const handleBlur = () => {
+      isTabActive = false;
+      // Set a timeout to check if user really left
+      setTimeout(() => {
+        if (!isTabActive && socketConnected) {
+          handleUserOffline();
+        }
+      }, 5000); // Wait 5 seconds before marking offline
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      stopHeartbeat();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, [socketConnected]);
 
   useEffect(() => {
     dispatch(fetchContacts());

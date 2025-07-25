@@ -13,7 +13,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 function App() {
   const dispatch = useDispatch();
-  const { authData, authToken } = useSelector((state) => state.global);
+  const { authToken } = useSelector((state) => state.global);
   // const token = localStorage.getItem("token");
   const isAuth = !!authToken;
 
