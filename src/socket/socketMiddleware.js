@@ -21,8 +21,8 @@ const socketMiddleware = (store) => (next) => (action) => {
 
     if (socket) socket.disconnect();
 
-    // const baseURL = "http://localhost:8000";
-    const baseURL = "https://chat-app-server-54ar.onrender.com";
+    const baseURL = "http://localhost:8000";
+    // const baseURL = "https://chat-app-server-54ar.onrender.com";
 
     socket = io(baseURL, {
       auth: { token },
@@ -56,7 +56,7 @@ const socketMiddleware = (store) => (next) => (action) => {
 
     const socketFunc = socketFunctions(store);
 
-    // ✅ Set up all your socket listeners using the action creators
+    // ✅ Set up all socket listeners using the action creators
     socket.on("update-user-status", socketFunc.updateUserStatus);
 
     socket.on("remove-request", socketFunc.removeRequest);
@@ -67,12 +67,9 @@ const socketMiddleware = (store) => (next) => (action) => {
 
     socket.on("receive-updated-message-chat", socketFunc.updateChatRecipients);
 
-    socket.on("typing", (data) => {
-      console.log("typing", data);
-    });
+    socket.on("typing", socketFunc.receiveUserTyping);
 
     socket.on("read-receipt", (data) => {
-      // You might want to add a readReceiptUpdated action to your slice
       console.log("Read receipt received:", data);
     });
 
@@ -101,16 +98,16 @@ const socketMiddleware = (store) => (next) => (action) => {
   }
 
   // ✅ Auto-connect when auth data is set
-  if (action.type === "global/setAuthData") {
-    const authData = action.payload;
-    const currentToken = store.getState().global.authToken;
+  // if (action.type === "global/setAuthData") {
+  //   const authData = action.payload;
+  //   const currentToken = store.getState().global.authToken;
 
-    if (authData && currentToken && !socket) {
-      setTimeout(() => {
-        store.dispatch({ type: "socket/connect" });
-      }, 100);
-    }
-  }
+  //   if (authData && currentToken && !socket) {
+  //     setTimeout(() => {
+  //       store.dispatch({ type: "socket/connect" });
+  //     }, 100);
+  //   }
+  // }
 
   if (action.type === "socket/emit") {
     const { event, data, callback } = action.payload;

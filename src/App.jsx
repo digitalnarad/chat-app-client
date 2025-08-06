@@ -7,9 +7,9 @@ import Login from "./page/AuthPages/Login";
 import Signin from "./page/AuthPages/Signin";
 import ForgotPassword from "./page/AuthPages/ForgotPassword";
 import ChatLayout from "./page/Chat/ChatLayout";
-import PopupAlert from "./components/PopupAlert/PopupAlert";
 import { setAuthToken, verifyToken } from "./store/globalSlice"; // adjust import to your slice
 import "bootstrap/dist/css/bootstrap.min.css";
+import PopupAlert from "./components/PopupAlert";
 
 function App() {
   const dispatch = useDispatch();

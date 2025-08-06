@@ -5,7 +5,7 @@ import { parseTimeAndDate } from "../../assets/helper";
 import { useEffect, useMemo, useState } from "react";
 import { Spinner } from "react-bootstrap";
 import CrazyLoader from "../../components/CrazyLoader";
-
+import Typewriter from "../../components/Typewriter";
 function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
   const dispatch = useDispatch();
   const { contacts, selectedContact, requests, loading } = useSelector(
@@ -105,6 +105,7 @@ function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
           </div>
         ) : (
           memoizedChats.map((contact) => {
+            console.log("contact", contact);
             const { participant } = contact;
             const selected = selectedChat?._id === contact._id;
             return (
@@ -133,9 +134,20 @@ function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
                     </span>
                   </div>
                   <div className="contact-message-row">
-                    <span className="contact-message">
-                      {contact?.lastMessage || "Join this chat...!"}
-                    </span>
+                    {contact?.isUserTyping ? (
+                      <Typewriter
+                        text={["typing..."]}
+                        speed={70}
+                        waitTime={1500}
+                        className="is_typing"
+                        deleteSpeed={40}
+                        cursorChar={""}
+                      />
+                    ) : (
+                      <span className="contact-message">
+                        {contact?.lastMessage || "Join this chat...!"}
+                      </span>
+                    )}
                     <span
                       className={`contact-unread ${
                         contact?.unread_count > 0 ? "" : "contact-read"

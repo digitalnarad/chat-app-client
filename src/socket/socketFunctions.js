@@ -5,6 +5,7 @@ import {
   setContactsLoading,
   setLiveMessages,
   setRequests,
+  setSelectedContact,
   showSuccess,
   throwError,
 } from "../store/globalSlice";
@@ -98,6 +99,28 @@ export function socketFunctions(store) {
     );
   };
 
+  const receiveUserTyping = (payload) => {
+    const { chatId, isTyping, userId } = payload;
+    const contacts = store.getState().global.contacts;
+    const selectedContact = store.getState().global.selectedContact;
+    if (selectedContact?._id === chatId.toString()) {
+      dispatch(
+        setSelectedContact({ ...selectedContact, isUserTyping: isTyping })
+      );
+    }
+    const updatedContacts = contacts.map((c) => {
+      if (c._id.toString() === chatId.toString()) {
+        return {
+          ...c,
+          isUserTyping: isTyping,
+        };
+      }
+      return c;
+    });
+    console.log("updatedContacts", updatedContacts);
+    dispatch(setContacts([...updatedContacts]));
+  };
+
   return {
     updateUserStatus,
     receiveRequest,
@@ -106,5 +129,6 @@ export function socketFunctions(store) {
     acceptRequest,
     receiveMessage,
     updateChatRecipients,
+    receiveUserTyping,
   };
 }

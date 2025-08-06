@@ -12,6 +12,8 @@ import {
 } from "../../store/globalSlice";
 import { Spinner } from "react-bootstrap";
 import CrazyLoader from "../../components/CrazyLoader";
+import dayjs from "dayjs";
+import Typewriter from "../../components/Typewriter";
 
 function ChatArea({}) {
   const dispatch = useDispatch();
@@ -24,7 +26,9 @@ function ChatArea({}) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
+  const typingTimeoutRef = useRef(null);
   const containerRef = useRef(null);
   const scrollBottomRef = useRef(null);
 
@@ -170,6 +174,48 @@ function ChatArea({}) {
     });
   };
 
+  const handleInputChange = (e) => {
+    setMessageText(e.target.value);
+
+    if (!isTyping) {
+      // Emit typing true once when typing starts
+      dispatch({
+        type: "socket/emit",
+        payload: {
+          event: "typing",
+          data: {
+            chatId,
+            isTyping: true,
+            receiver_id: selectedContact?.participant?._id,
+          },
+          callback: () => {},
+        },
+      });
+      setIsTyping(true);
+    }
+
+    // Reset debounce timer on every input
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    typingTimeoutRef.current = setTimeout(() => {
+      // After 1 second of inactivity, emit typing false
+      dispatch({
+        type: "socket/emit",
+        payload: {
+          event: "typing",
+          data: {
+            chatId,
+            isTyping: false,
+            receiver_id: selectedContact?.participant?._id,
+          },
+          callback: () => {},
+        },
+      });
+      setIsTyping(false);
+    }, 1000);
+  };
+
   useEffect(() => {
     if (!chatId) return;
 
@@ -196,7 +242,6 @@ function ChatArea({}) {
         },
       });
     };
-    // socket.on("receive-message", handleReceiveMessage);
   }, [chatId]);
 
   useEffect(() => {
@@ -244,8 +289,6 @@ function ChatArea({}) {
                 size="lg"
                 style={{ color: "#2563eb" }}
               />
-
-              {/* <CrazyLoader /> */}
             </div>
           )}
 
@@ -258,6 +301,13 @@ function ChatArea({}) {
             </div>
           )}
           {messagesList.map((message, index) => {
+            const nextMessage = messagesList[index - 1];
+            let isNextDate = false;
+            if (nextMessage && nextMessage?.type !== "join-chat") {
+              isNextDate =
+                dayjs(message?.createdAt).format("DD/MM/YYYY") !==
+                dayjs(nextMessage?.createdAt).format("DD/MM/YYYY");
+            }
             return (
               <MessageBubble
                 key={message._id + message?.createdAt}
@@ -265,9 +315,22 @@ function ChatArea({}) {
                 sender={message?.sender}
                 time={message?.createdAt}
                 type={message?.message_type}
+                isNextDate={isNextDate}
               />
             );
           })}
+          {selectedContact?.isUserTyping && (
+            <div className="typing-indicator">
+              <Typewriter
+                text={["typing..."]}
+                speed={70}
+                waitTime={1500}
+                className="is_typing"
+                deleteSpeed={40}
+                cursorChar={""}
+              />
+            </div>
+          )}
           <div ref={scrollBottomRef} />
         </InfiniteScroll>
       </div>
@@ -278,7 +341,12 @@ function ChatArea({}) {
             placeholder="Type a message..."
             className="chat-input-field"
             value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
+            onChange={handleInputChange}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && messageText.trim()) {
+                sendMessage();
+              }
+            }}
           />
           <button
             className="chat-send-btn"

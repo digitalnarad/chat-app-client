@@ -2,13 +2,41 @@ import React from "react";
 import "./MessageBubble.css";
 import dayjs from "dayjs";
 import { useSelector } from "react-redux";
-function MessageBubble({ text, sender, time, type }) {
+import { ClockFading } from "lucide-react";
+function MessageBubble({ text, sender, time, type, isNextDate }) {
   const { selectedContact } = useSelector((state) => state.global);
 
   const isUser = sender !== selectedContact?.participant?._id;
 
+  const getDisplayDate = (time) => {
+    const inputDate = dayjs(time);
+    const today = dayjs();
+    const yesterday = dayjs().subtract(1, "day");
+    const sevenDaysAgo = today.subtract(6, "day");
+
+    if (inputDate.isSame(today, "day")) {
+      return "Today";
+    }
+    if (inputDate.isSame(yesterday, "day")) {
+      return "Yesterday";
+    }
+    if (
+      inputDate.isAfter(sevenDaysAgo, "day") &&
+      inputDate.isBefore(today, "day")
+    ) {
+      return inputDate.format("dddd");
+    }
+    return inputDate.format("DD/MM/YYYY");
+  };
+
   return (
-    <>
+    <div style={{ position: "relative" }}>
+      {isNextDate && (
+        <span className="line">
+          <span className="chat-time">{getDisplayDate(time)}</span>
+        </span>
+      )}
+
       {type === "text" && (
         <div
           className={`message-bubble-container ${
@@ -25,18 +53,21 @@ function MessageBubble({ text, sender, time, type }) {
           <span className="message-time">{dayjs(time).format("HH:mm")}</span>
         </div>
       )}
+      <div className="read-receipt-status">
+        <ClockFading />
+      </div>
 
       {type === "join-chat" && (
         <div className="join-chat-bubble-container">
-          <div className="join-chat-bubble">{text}</div>
-          <span className="line">
+          <div className="join-chat-bubble">
+            {text}
             <span className="join-chat-time">
               {dayjs(time).format("DD/MM/YYYY HH:mm")}
             </span>
-          </span>
+          </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
