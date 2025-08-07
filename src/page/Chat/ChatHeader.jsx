@@ -1,4 +1,4 @@
-import { Search, Settings } from "lucide-react";
+import { EllipsisVertical, Search, Settings } from "lucide-react";
 import { useSelector } from "react-redux";
 import { parseTimeAndDate } from "../../assets/helper";
 import { useMemo } from "react";
@@ -45,11 +45,7 @@ function ChatHeader() {
         <div className="chat-header-actions">
           <button className="chat-header-action-icon">
             <div className="btn-cover"></div>
-            <Search size={20} className="btn-icon" />
-          </button>
-          <button className="chat-header-action-icon">
-            <div className="btn-cover"></div>
-            <Settings size={20} className="btn-icon" />
+            <EllipsisVertical size={20} className="btn-icon" />
           </button>
         </div>
       </div>

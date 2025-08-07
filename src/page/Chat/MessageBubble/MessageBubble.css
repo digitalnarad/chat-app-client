@@ -59,25 +59,27 @@
 }
 
 .message-bubble {
-  border-radius: 1rem; /* rounded-2xl */
-  padding: 8px 16px; /* px-4 py-2 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07); /* shadow-soft */
+  border-radius: 1rem;
+  padding: 8px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
   transition: all 0.2s;
   font-size: 1rem;
 }
 
 .message-sent {
-  background: #2563eb; /* Example: bg-message-sent */
-  color: #fff; /* Example: text-message-sent-foreground */
-  border-bottom-right-radius: 6px; /* rounded-br-md */
+  background: #2563eb;
+  color: #fff;
+  border-bottom-right-radius: 6px;
   transition: background-color 0.5s ease;
+  margin-right: 5px;
+  position: relative;
 }
 
 .message-received {
-  background: #ffffff; /* Example: bg-message-received */
-  color: #111827; /* Example: text-message-received-foreground */
-  border-bottom-left-radius: 6px; /* rounded-bl-md */
-  border: 1px solid #dee5f3; /* border-border */
+  background: #ffffff;
+  color: #111827;
+  border-bottom-left-radius: 6px;
+  border: 1px solid #dee5f3;
   box-shadow: none;
   transition: background-color 0.5s ease;
 }
@@ -109,9 +111,12 @@
 .read-receipt-status {
   font-size: 12px;
   position: absolute;
-  color: #6b7280;
-  margin-top: 0px;
-  padding-left: 4px;
-  padding-right: 4px;
-  letter-spacing: 0.5px;
+  bottom: 0px;
+  right: 0px;
+  color: #fff;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

@@ -19,8 +19,8 @@
 }
 
 .chat-layout-sidebar {
-  width: min(40%, 500px);
-  min-width: 300px;
+  width: 20%;
+  min-width: 350px;
   height: 100%;
   background: #fafafa;
   border-right: 1px solid #e6ebf7;
@@ -102,7 +102,7 @@
 .chat-search-label {
   position: absolute;
   left: 15px;
-  top: 10px;
+  top: 6px;
   color: #999999;
   pointer-events: none;
 }
@@ -264,10 +264,9 @@
 }
 
 .chat-header-avatar {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
-  background: #2563eb; /* 'bg-primary' */
   color: #fff; /* 'text-primary-foreground' */
   display: flex;
   align-items: center;
@@ -275,6 +274,11 @@
   letter-spacing: 1px;
   font-weight: 500;
   margin-right: 12px;
+  text-transform: uppercase;
+  background-color: #4768af; /* Tailwind's bg-primary */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0px -5px 15px rgba(0, 0, 0, 0.1),
+    inset 0px 5px 15px rgba(255, 255, 255, 0.2); /* shadow-soft approximation */
   text-transform: uppercase;
 }
 
@@ -319,7 +323,7 @@
   height: 0px;
   position: absolute;
   border-radius: 50%;
-  background: #2f7eff;
+  background-color: #4768af;
   transition: all 0.3s;
 }
 .btn-icon {

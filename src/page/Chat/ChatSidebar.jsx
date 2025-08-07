@@ -30,7 +30,7 @@ function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
   }, [JSON.stringify(contacts)]);
 
   return (
-    <div className="chat-sidebar">
+    <div className="chat-sidebar" style={{ minWidth: "300px" }}>
       <div className="chat-sidebar-header">
         <div className="logo-setting">
           <h1 className="chat-logo">Chats</h1>
@@ -105,7 +105,6 @@ function ChatSidebar({ setIsMessageRequest, setIsAddNewChat }) {
           </div>
         ) : (
           memoizedChats.map((contact) => {
-            console.log("contact", contact);
             const { participant } = contact;
             const selected = selectedChat?._id === contact._id;
             return (

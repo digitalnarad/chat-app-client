@@ -4,6 +4,7 @@ import {
   setContacts,
   setContactsLoading,
   setLiveMessages,
+  setReadReceipts,
   setRequests,
   setSelectedContact,
   showSuccess,
@@ -58,14 +59,17 @@ export function socketFunctions(store) {
     const selectedContact = store.getState().global.selectedContact;
 
     const filteredContacts = contacts.filter((c) => c._id !== payload._id);
+    const findContact = contacts.find((c) => c._id === payload._id);
     let updatedReadRecipients = false;
     if (selectedContact?._id === payload._id) {
+      console.log("selectedContact?.participant?._id", selectedContact);
       dispatch({
         type: "socket/emit",
         payload: {
           event: "mark-as-read",
           data: {
             chat_id: payload._id,
+            receiver_id: selectedContact?.participant?._id,
           },
           callback: (response) => {
             if (!response.success) {
@@ -76,21 +80,10 @@ export function socketFunctions(store) {
         },
       });
     }
-    contacts.map((c) => {
-      if (c._id === payload._id) {
-        return {
-          ...c,
-          lastMessage: payload.lastMessage,
-          unread_count:
-            selectedContact?._id === payload._id ? 0 : payload.unread_count,
-        };
-      }
-      return c;
-    });
     dispatch(
       setContacts([
         {
-          ...payload,
+          ...findContact,
           unread_count:
             selectedContact?._id === payload._id ? 0 : payload.unread_count,
         },
@@ -117,8 +110,22 @@ export function socketFunctions(store) {
       }
       return c;
     });
-    console.log("updatedContacts", updatedContacts);
     dispatch(setContacts([...updatedContacts]));
+  };
+
+  const updateMessageRecipients = (payload) => {
+    const selectedContact = store.getState().global.selectedContact;
+    const { chatId } = payload;
+
+    if (selectedContact?._id === chatId.toString()) {
+      dispatch(
+        setReadReceipts([
+          {
+            ...payload,
+          },
+        ])
+      );
+    }
   };
 
   return {
@@ -130,5 +137,6 @@ export function socketFunctions(store) {
     receiveMessage,
     updateChatRecipients,
     receiveUserTyping,
+    updateMessageRecipients,
   };
 }

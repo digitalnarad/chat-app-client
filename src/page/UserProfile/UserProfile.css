@@ -1,0 +1,61 @@
+.profile-setting-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ddd;
+}
+
+.profile-setting {
+  width: 90%;
+  height: 90%;
+  display: flex;
+}
+.profile-setting-sidebar {
+  width: 30%;
+  min-width: 350px;
+}
+.profile-setting-content {
+  width: 100%;
+}
+.profile-setting-sidebar-content {
+  width: 100%;
+  border-right: 2px solid #a0a0a0;
+  padding-bottom: 100px;
+  padding-top: 15px;
+}
+
+.profile-setting-sidebar-item {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 8px;
+  padding-right: 0px;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+}
+.profile-setting-sidebar-item-active {
+  letter-spacing: 1.3px;
+  padding-right: 10px;
+  background: linear-gradient(90deg, transparent 60%, rgba(0, 0, 0, 0.1));
+}
+.profile-setting-sidebar-item:hover {
+  letter-spacing: 1.3px;
+  padding-right: 10px;
+  background: linear-gradient(90deg, transparent 60%, rgba(0, 0, 0, 0.1));
+}
+.profile-setting-sidebar-item-icon {
+  font-size: 20px;
+  margin-right: 10px;
+}
+.profile-setting-sidebar-item-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+}

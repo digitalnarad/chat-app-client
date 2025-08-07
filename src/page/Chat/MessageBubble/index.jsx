@@ -2,8 +2,8 @@ import React from "react";
 import "./MessageBubble.css";
 import dayjs from "dayjs";
 import { useSelector } from "react-redux";
-import { ClockFading } from "lucide-react";
-function MessageBubble({ text, sender, time, type, isNextDate }) {
+import { Check, CheckCheck, ClockFading } from "lucide-react";
+function MessageBubble({ text, sender, time, type, isNextDate, read_by }) {
   const { selectedContact } = useSelector((state) => state.global);
 
   const isUser = sender !== selectedContact?.participant?._id;
@@ -49,13 +49,19 @@ function MessageBubble({ text, sender, time, type, isNextDate }) {
             }`}
           >
             <p className="message-text">{text}</p>
+            {isUser && (
+              <div className="read-receipt-status">
+                {read_by.length > 0 ? (
+                  <CheckCheck size={12} />
+                ) : (
+                  <Check size={12} />
+                )}
+              </div>
+            )}
           </div>
           <span className="message-time">{dayjs(time).format("HH:mm")}</span>
         </div>
       )}
-      <div className="read-receipt-status">
-        <ClockFading />
-      </div>
 
       {type === "join-chat" && (
         <div className="join-chat-bubble-container">

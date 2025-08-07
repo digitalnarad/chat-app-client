@@ -10,6 +10,7 @@ import ChatLayout from "./page/Chat/ChatLayout";
 import { setAuthToken, verifyToken } from "./store/globalSlice"; // adjust import to your slice
 import "bootstrap/dist/css/bootstrap.min.css";
 import PopupAlert from "./components/PopupAlert";
+import ProfileSetting from "./page/UserProfile/ProfileSetting";
 
 function App() {
   const dispatch = useDispatch();
@@ -30,6 +31,8 @@ function App() {
         {isAuth ? (
           <>
             <Route path="/" element={<ChatLayout />} />
+            <Route path="/profile-setting/:tab?" element={<ProfileSetting />} />
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </>
         ) : (

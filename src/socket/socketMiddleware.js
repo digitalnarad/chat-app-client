@@ -69,9 +69,7 @@ const socketMiddleware = (store) => (next) => (action) => {
 
     socket.on("typing", socketFunc.receiveUserTyping);
 
-    socket.on("read-receipt", (data) => {
-      console.log("Read receipt received:", data);
-    });
+    socket.on("read-receipt", socketFunc.updateMessageRecipients);
 
     socket.on("accept-request", socketFunc.acceptRequest);
 
@@ -111,7 +109,6 @@ const socketMiddleware = (store) => (next) => (action) => {
 
   if (action.type === "socket/emit") {
     const { event, data, callback } = action.payload;
-    console.log("event", event);
 
     if (!socket) {
       console.log("❌ Socket not connected, cannot emit event:", event);

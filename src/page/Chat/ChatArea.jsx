@@ -8,6 +8,7 @@ import {
   handelCatch,
   setContacts,
   setLiveMessages,
+  setReadReceipts,
   throwError,
 } from "../../store/globalSlice";
 import { Spinner } from "react-bootstrap";
@@ -17,9 +18,8 @@ import Typewriter from "../../components/Typewriter";
 
 function ChatArea({}) {
   const dispatch = useDispatch();
-  const { selectedContact, liveMessages, contacts, authData } = useSelector(
-    (state) => state.global
-  );
+  const { selectedContact, liveMessages, readReceipts, contacts, authData } =
+    useSelector((state) => state.global);
   const [chatId, setChatId] = useState("");
   const [messageText, setMessageText] = useState("");
   const [messagesList, setMessagesList] = useState([]);
@@ -65,6 +65,21 @@ function ChatArea({}) {
       dispatch(setLiveMessages(null));
     }
   }, [JSON.stringify(liveMessages)]);
+
+  useEffect(() => {
+    setMessagesList((prev) =>
+      prev.map((m) => {
+        if (
+          m.sender === authData?._id &&
+          m.read_by.filter((r) => r === authData?._id).length === 0
+        ) {
+          return { ...m, read_by: [...m.read_by, authData?._id] };
+        }
+        return m;
+      })
+    );
+    dispatch(setReadReceipts([]));
+  }, [JSON.stringify(readReceipts)]);
 
   const sendMessage = () => {
     const nearBottom = isNearBottom();
@@ -150,6 +165,7 @@ function ChatArea({}) {
         event: "mark-as-read",
         data: {
           chat_id: message?.chat_id,
+          receiver_id: selectedContact?.participant?._id,
         },
         callback: (response) => {
           if (!response.success) {
@@ -213,7 +229,7 @@ function ChatArea({}) {
         },
       });
       setIsTyping(false);
-    }, 1000);
+    }, 500);
   };
 
   useEffect(() => {
@@ -316,6 +332,7 @@ function ChatArea({}) {
                 time={message?.createdAt}
                 type={message?.message_type}
                 isNextDate={isNextDate}
+                read_by={message?.read_by}
               />
             );
           })}

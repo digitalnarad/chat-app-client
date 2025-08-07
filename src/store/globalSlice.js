@@ -21,6 +21,7 @@ const initialState = {
   typingUsers: [],
   requests: [],
   liveMessages: null,
+  readReceipts: [],
 
   // Socket state - ADD THIS
   socketConnected: false,
@@ -103,6 +104,10 @@ const globalSlice = createSlice({
     },
     setRequestLoading(state, action) {
       state.loading.request = action.payload;
+    },
+
+    setReadReceipts(state, action) {
+      state.readReceipts = [...action.payload];
     },
   },
 });
@@ -231,6 +236,7 @@ export const {
   setSendingMessageLoading,
   setRequestLoading,
   setLiveMessages,
+  setReadReceipts,
 } = globalSlice.actions;
 
 export default globalSlice.reducer;
